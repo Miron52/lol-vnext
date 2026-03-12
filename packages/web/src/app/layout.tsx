@@ -1,0 +1,21 @@
+import type { Metadata } from 'next';
+import { Providers } from './providers';
+
+export const metadata: Metadata = {
+  title: 'LOL vNext',
+  description: 'Transportation Management & Profit Control System',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body style={{ margin: 0, fontFamily: 'system-ui, sans-serif' }}>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
+}
