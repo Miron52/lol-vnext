@@ -14,6 +14,8 @@ import { LoadsTable } from './LoadsTable';
 import { ExportModal } from './ExportModal';
 import { PageShell } from '@/components/PageShell';
 import { ErrorBanner, LoadingBox, EmptyBox } from '@/components/StateBoxes';
+import { Drawer } from '@/components/Drawer';
+import { LoadDrawerContent } from './LoadDrawerContent';
 import { primaryBtnStyle, navBtnStyle, checkboxLabelStyle, stickyToolbarStyle, toolbarGroupStyle, bannerStyle, colors, fontSizes } from '@/lib/styles';
 
 export default function LoadsPage() {
@@ -32,6 +34,30 @@ export default function LoadsPage() {
   );
   const [exportOpen, setExportOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // ── Drawer state ──
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerLoadId, setDrawerLoadId] = useState<string | null>(null);
+
+  const openNewLoadDrawer = useCallback(() => {
+    setDrawerLoadId(null);
+    setDrawerOpen(true);
+  }, []);
+
+  const openEditDrawer = useCallback((loadId: string) => {
+    setDrawerLoadId(loadId);
+    setDrawerOpen(true);
+  }, []);
+
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false);
+    setDrawerLoadId(null);
+  }, []);
+
+  const handleDrawerSaved = useCallback(() => {
+    closeDrawer();
+    refetch();
+  }, [closeDrawer, refetch]);
 
   // ── Auth guard ──────────────────────────────────────────────
   useEffect(() => {
@@ -131,9 +157,7 @@ export default function LoadsPage() {
             </button>
           )}
           <button
-            onClick={() => {
-              router.push(`/loads/new${selectedWeek ? `?weekId=${selectedWeek.id}` : ''}`);
-            }}
+            onClick={openNewLoadDrawer}
             style={primaryBtnStyle}
           >
             + New Load
@@ -170,12 +194,12 @@ export default function LoadsPage() {
           title="No loads this week"
           subtitle="Create a new load or switch to a different week."
           actionLabel="+ New Load"
-          onAction={() => router.push(`/loads/new${selectedWeek ? `?weekId=${selectedWeek.id}` : ''}`)}
+          onAction={openNewLoadDrawer}
         />
       ) : (
         <LoadsTable
           loads={loads}
-          onEdit={(loadId) => router.push(`/loads/${loadId}/edit`)}
+          onEdit={openEditDrawer}
           onArchive={canArchive ? handleArchive : undefined}
           onUnarchive={canArchive ? handleUnarchive : undefined}
         />
@@ -188,6 +212,15 @@ export default function LoadsPage() {
           onClose={() => setExportOpen(false)}
         />
       )}
+      {/* ── Load drawer ── */}
+      <Drawer open={drawerOpen} onClose={closeDrawer}>
+        <LoadDrawerContent
+          loadId={drawerLoadId}
+          weekId={selectedWeek?.id}
+          onSaved={handleDrawerSaved}
+          onClose={closeDrawer}
+        />
+      </Drawer>
     </PageShell>
   );
 }

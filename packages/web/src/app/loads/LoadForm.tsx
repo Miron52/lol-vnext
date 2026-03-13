@@ -119,6 +119,8 @@ interface LoadFormProps {
   isEdit?: boolean;
   /** When true, all fields are disabled and submit button is hidden (archived loads). */
   readOnly?: boolean;
+  /** Optional cancel callback — when provided, shows a Cancel button in the form actions. */
+  onCancel?: () => void;
 }
 
 // ── Finance preview (read-only derived values) ──────────────
@@ -183,6 +185,7 @@ export function LoadForm({
   title: _title,
   isEdit = false,
   readOnly = false,
+  onCancel,
 }: LoadFormProps) {
   const [form, setForm] = useState<LoadFormData>(initialData);
   const [errors, setErrors] = useState<string[]>([]);
@@ -511,7 +514,7 @@ export function LoadForm({
       <div style={formActionsStyle}>
         <button
           type="button"
-          onClick={() => window.history.back()}
+          onClick={() => (onCancel ? onCancel() : window.history.back())}
           style={secondaryBtnStyle}
         >
           {readOnly ? 'Back' : 'Cancel'}
