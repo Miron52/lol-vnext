@@ -107,22 +107,50 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
+  // ── Greeting based on time of day ──────────────────────────
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
   // ── Main render ────────────────────────────────────────────
   return (
-    <PageShell breadcrumb="/ Dashboard" user={user} onLogout={logout} nav={[{label:'Home',href:'/'},{label:'Loads',href:'/loads'}]} title="Dashboard" subtitle="Weekly profit overview and trends">
-
-      {/* Range selector */}
-      <div style={{ marginBottom: spacing.xxl, display: 'flex', gap: spacing.md, alignItems: 'center' }}>
-        <span style={{ fontSize: fontSizes.base, color: colors.textSecondary, fontWeight: 500 }}>Range:</span>
-        {RANGE_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => setRange(opt.value)}
-            style={tabBtnStyle(range === opt.value)}
-          >
-            {opt.label}
-          </button>
-        ))}
+    <PageShell
+      user={user}
+      onLogout={logout}
+      title="Dashboard"
+      subtitle="Weekly profit overview and trends"
+    >
+      {/* Welcome banner */}
+      <div style={{
+        ...cardStyle,
+        marginBottom: spacing.xxl,
+        background: `linear-gradient(135deg, ${colors.primaryLight} 0%, ${colors.bgWhite} 100%)`,
+        borderColor: colors.primaryBorder,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: spacing.xl,
+      }}>
+        <div>
+          <div style={{ fontSize: fontSizes.xl, fontWeight: 600, color: colors.text }}>
+            {greeting}, {user.firstName}
+          </div>
+          <div style={{ fontSize: fontSizes.md, color: colors.textSecondary, marginTop: spacing.xs }}>
+            Here is your operational summary for the selected period.
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: spacing.md, alignItems: 'center' }}>
+          <span style={{ fontSize: fontSizes.base, color: colors.textSecondary, fontWeight: 500 }}>Range:</span>
+          {RANGE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setRange(opt.value)}
+              style={tabBtnStyle(range === opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Error state */}
@@ -142,10 +170,10 @@ export default function DashboardPage() {
           {/* KPI Cards */}
           <div
             style={{
-              display: 'flex',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))',
               gap: spacing.lg,
               marginBottom: spacing.xxl,
-              flexWrap: 'wrap',
               opacity: loading ? 0.6 : 1,
               transition: `opacity ${transition.normal}`,
             }}

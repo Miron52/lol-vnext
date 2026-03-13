@@ -699,6 +699,102 @@ export const auditTdStyle: React.CSSProperties = {
   borderBottom: `1px solid ${colors.borderSubtle}`,
 };
 
+// ══════════════════════════════════════════════════════════════
+// APP SHELL — SIDEBAR & TOP BAR
+// ══════════════════════════════════════════════════════════════
+
+export const SIDEBAR_WIDTH = 220;
+
+/** Fixed sidebar container */
+export const sidebarStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  bottom: 0,
+  width: SIDEBAR_WIDTH,
+  background: colors.text,
+  color: colors.bgWhite,
+  display: 'flex',
+  flexDirection: 'column',
+  zIndex: 30,
+  overflow: 'hidden',
+};
+
+/** Sidebar brand / logo area */
+export const sidebarBrandStyle: React.CSSProperties = {
+  padding: `${spacing.xxl} ${spacing.xl}`,
+  borderBottom: '1px solid rgba(255,255,255,0.08)',
+};
+
+/** Sidebar nav list container */
+export const sidebarNavStyle: React.CSSProperties = {
+  flex: 1,
+  padding: `${spacing.lg} 0`,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing.xs,
+};
+
+/** Sidebar nav item */
+export function sidebarItemStyle(active: boolean): React.CSSProperties {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.lg,
+    padding: `${spacing.md} ${spacing.xl}`,
+    fontSize: fontSizes.md,
+    fontWeight: active ? 600 : 400,
+    color: active ? colors.bgWhite : 'rgba(255,255,255,0.6)',
+    background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
+    borderLeft: active ? `3px solid ${colors.primary}` : '3px solid transparent',
+    cursor: 'pointer',
+    border: 'none',
+    borderRight: 'none',
+    borderTop: 'none',
+    borderBottom: 'none',
+    borderLeftWidth: 3,
+    borderLeftStyle: 'solid',
+    borderLeftColor: active ? colors.primary : 'transparent',
+    textAlign: 'left',
+    width: '100%',
+    transition: `background ${transition.fast}, color ${transition.fast}`,
+    letterSpacing: '0.01em',
+  };
+}
+
+/** Sidebar user/footer area */
+export const sidebarFooterStyle: React.CSSProperties = {
+  padding: `${spacing.lg} ${spacing.xl}`,
+  borderTop: '1px solid rgba(255,255,255,0.08)',
+  fontSize: fontSizes.sm,
+  color: 'rgba(255,255,255,0.5)',
+};
+
+/** Top bar in sidebar layout */
+export const topBarStyle: React.CSSProperties = {
+  position: 'sticky',
+  top: 0,
+  zIndex: 20,
+  background: colors.bgWhite,
+  borderBottom: `1px solid ${colors.borderLight}`,
+  padding: `${spacing.lg} ${spacing.xxl}`,
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+};
+
+/** Main content area offset from sidebar */
+export const mainContentStyle: React.CSSProperties = {
+  marginLeft: SIDEBAR_WIDTH,
+  minHeight: '100vh',
+  background: colors.bgPage,
+};
+
+/** Content padding inside main area */
+export const contentPaddingStyle: React.CSSProperties = {
+  padding: spacing.xxl,
+};
+
 /** Currency formatter */
 export function fmt(n: number): string {
   return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
