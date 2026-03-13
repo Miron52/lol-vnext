@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import type { WeeklyAggregation, StatusBreakdown, TopCorridor } from '@lol/shared';
-import { cardStyle, fontSizes, spacing, colors, fontFamily, radii } from '@/lib/styles';
+import { cardStyle, fontSizes, spacing, colors, fontFamily, radii, shadows } from '@/lib/styles';
 
 /* ─────────────────────────── helpers ────────────────────────── */
 
@@ -145,130 +146,199 @@ export function StatusStatsCards({
   );
 }
 
-/* ────────── Profit Statistics bar chart ──────────────────────── */
-/* Shows Net Profit, Driver Cost bars + profit margin % line      */
+/* ────────── Profit Statistics — 5-series bar chart with tooltip ── */
+
+interface TooltipData {
+  weekLabel: string;
+  netProfit: number;
+  otr: number;
+  driverProfit: number;
+  pctProfit: number;
+  loadCount: number;
+  x: number;
+  y: number;
+}
+
+const SERIES_CONFIG = [
+  { key: 'netProfit', label: 'Net Profit', color: '#c4b5fd' },      // purple-light
+  { key: 'otr', label: 'OTR (1.25%)', color: '#6ee7b7' },          // green-light
+  { key: 'driverProfit', label: 'Driver Profit', color: '#93c5fd' }, // blue-light
+  { key: 'pctProfit', label: 'Percentage Profit', color: '#fdba74' }, // orange-light
+  { key: 'loadCount', label: 'LOL Count', color: '#fca5a5' },       // red-light
+] as const;
 
 export function ProfitStatsChart({ weeks }: { weeks: WeeklyAggregation[] }) {
+  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+
   if (weeks.length === 0) return null;
 
-  const chartHeight = 240;
-  const barGroupWidth = Math.max(44, Math.min(72, 650 / weeks.length));
-  const barWidth = Math.max(10, (barGroupWidth - 12) / 2);
-  const padLeft = 56;
-  const padRight = 50;
-  const chartWidth = Math.max(420, weeks.length * barGroupWidth + padLeft + padRight);
+  // Build per-week data
+  const weekData = weeks.map((w) => ({
+    weekLabel: w.weekLabel,
+    netProfit: w.netProfitAmount,
+    otr: w.otrAmount,
+    driverProfit: w.driverCostAmount,
+    pctProfit: w.grossAmount > 0 ? Math.round((w.profitAmount / w.grossAmount) * 10000) / 100 : 0,
+    loadCount: w.loadCount,
+  }));
 
-  // Bar values
-  const netProfits = weeks.map((w) => w.netProfitAmount);
-  const driverCosts = weeks.map((w) => w.driverCostAmount);
-  const allBarVals = [...netProfits, ...driverCosts];
-  const maxBar = Math.max(...allBarVals, 1);
+  // Main bar is driverProfit (largest value) — all bars scale to this max
+  const allVals = weekData.flatMap((d) => [d.netProfit, d.otr, d.driverProfit]);
+  const maxVal = Math.max(...allVals, 1);
 
-  // Line: profit margin %
-  const margins = weeks.map((w) => (w.grossAmount > 0 ? (w.profitAmount / w.grossAmount) * 100 : 0));
-  const maxPct = Math.max(...margins, 1);
+  const chartHeight = 260;
+  const barGroupWidth = Math.max(50, Math.min(80, 700 / weeks.length));
+  const padLeft = 60;
+  const padRight = 16;
+  const chartWidth = Math.max(440, weeks.length * barGroupWidth + padLeft + padRight);
 
-  const series = [
-    { label: 'Net Profit', color: colors.teal, values: netProfits },
-    { label: 'Driver Cost', color: colors.orangeLight, values: driverCosts },
-  ];
+  // Main bar (tallest) — driverProfit in light blue, overlaid with netProfit + otr
+  // This matches the screenshot where Driver Profit is the tall bar with values on top
 
   return (
-    <div style={{ ...cardStyle, flex: 1, minWidth: 400 }}>
+    <div style={{ ...cardStyle, flex: 1, minWidth: 400, position: 'relative' }}>
       <h3 style={{ margin: `0 0 ${spacing.lg}`, fontSize: fontSizes.lg, fontWeight: 600, color: colors.text }}>
         Profit Statistics
       </h3>
 
       {/* Legend */}
-      <div style={{ display: 'flex', gap: spacing.xl, marginBottom: spacing.md, flexWrap: 'wrap' }}>
-        {series.map((s) => (
-          <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: fontSizes.sm, color: colors.textSecondary }}>
-            <span style={{ width: 12, height: 12, borderRadius: 2, background: s.color, display: 'inline-block' }} />
+      <div style={{ display: 'flex', gap: spacing.lg, marginBottom: spacing.lg, flexWrap: 'wrap' }}>
+        {SERIES_CONFIG.map((s) => (
+          <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: fontSizes.sm, color: colors.textSecondary }}>
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: s.color, display: 'inline-block' }} />
             {s.label}
           </div>
         ))}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: fontSizes.sm, color: colors.textSecondary }}>
-          <span style={{ width: 12, height: 2, background: colors.primary, display: 'inline-block', borderRadius: 1 }} />
-          Margin %
-        </div>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <svg width={chartWidth} height={chartHeight + 40} viewBox={`0 0 ${chartWidth} ${chartHeight + 40}`} style={{ fontFamily }}>
-          {/* Y-axis gridlines (left — dollars) */}
+      <div style={{ overflowX: 'auto', position: 'relative' }}>
+        <svg
+          width={chartWidth}
+          height={chartHeight + 50}
+          viewBox={`0 0 ${chartWidth} ${chartHeight + 50}`}
+          style={{ fontFamily, display: 'block' }}
+          onMouseLeave={() => setTooltip(null)}
+        >
+          {/* Y-axis gridlines */}
           {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
             const y = chartHeight - frac * chartHeight;
             return (
               <g key={frac}>
                 <line x1={padLeft} y1={y} x2={chartWidth - padRight} y2={y} stroke={colors.borderSubtle} strokeWidth={1} />
-                <text x={padLeft - 6} y={y + 4} textAnchor="end" fontSize={10} fill={colors.textMuted}>
-                  {formatCompact(maxBar * frac)}
+                <text x={padLeft - 8} y={y + 4} textAnchor="end" fontSize={10} fill={colors.textMuted}>
+                  {formatCompact(maxVal * frac)}
                 </text>
               </g>
             );
           })}
 
-          {/* Y-axis right — percentage */}
-          {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
-            const y = chartHeight - frac * chartHeight;
-            return (
-              <text key={`pct-${frac}`} x={chartWidth - padRight + 6} y={y + 4} textAnchor="start" fontSize={10} fill={colors.primary}>
-                {(maxPct * frac).toFixed(0)}%
-              </text>
-            );
-          })}
+          {/* Bars per week */}
+          {weekData.map((d, i) => {
+            const groupX = padLeft + 8 + i * barGroupWidth;
+            const bw = barGroupWidth - 16;
 
-          {/* Bars */}
-          {weeks.map((_, i) => {
-            const groupX = padLeft + 4 + i * barGroupWidth;
+            const driverH = Math.max(0, (d.driverProfit / maxVal) * chartHeight);
+            const netH = Math.max(0, (d.netProfit / maxVal) * chartHeight);
+            const otrH = Math.max(0, (d.otr / maxVal) * chartHeight);
+
+            const isHovered = tooltip?.weekLabel === d.weekLabel;
+
             return (
-              <g key={i}>
-                {series.map((s, si) => {
-                  const val = s.values[i] || 0;
-                  const barH = Math.max(0, (val / maxBar) * chartHeight);
-                  const x = groupX + si * (barWidth + 2);
-                  const y = chartHeight - barH;
-                  return (
-                    <g key={s.label}>
-                      <rect x={x} y={y} width={barWidth} height={barH} fill={s.color} rx={3} opacity={0.85} />
-                      <title>{`${s.label}: ${formatCurrency(val)}`}</title>
-                    </g>
-                  );
-                })}
+              <g
+                key={d.weekLabel}
+                style={{ cursor: 'pointer' }}
+                onMouseEnter={(e) => {
+                  const rect = (e.currentTarget.ownerSVGElement as SVGSVGElement).getBoundingClientRect();
+                  setTooltip({
+                    ...d,
+                    x: groupX + bw / 2,
+                    y: chartHeight - driverH - 10,
+                  });
+                }}
+              >
+                {/* Hover background */}
+                <rect
+                  x={groupX - 4}
+                  y={0}
+                  width={bw + 8}
+                  height={chartHeight}
+                  fill={isHovered ? 'rgba(15,23,42,0.03)' : 'transparent'}
+                  rx={4}
+                />
+
+                {/* Driver Profit — tallest bar */}
+                <rect x={groupX} y={chartHeight - driverH} width={bw} height={driverH} fill="#93c5fd" rx={4} />
+
+                {/* Net Profit — overlaid from bottom */}
+                <rect x={groupX} y={chartHeight - netH} width={bw} height={netH} fill="#c4b5fd" rx={4} opacity={0.7} />
+
+                {/* OTR — small slice on top of net profit */}
+                <rect x={groupX} y={chartHeight - netH - otrH} width={bw} height={otrH} fill="#6ee7b7" rx={2} opacity={0.8} />
+
+                {/* Value label on top of bar */}
+                <text
+                  x={groupX + bw / 2}
+                  y={chartHeight - driverH - 6}
+                  textAnchor="middle"
+                  fontSize={10}
+                  fontWeight={600}
+                  fill={colors.textSecondary}
+                >
+                  {formatCompact(d.driverProfit)}
+                </text>
+
+                {/* X-axis label */}
+                <text x={groupX + bw / 2} y={chartHeight + 16} textAnchor="middle" fontSize={10} fill={colors.textSecondary}>
+                  {d.weekLabel}
+                </text>
               </g>
             );
           })}
 
-          {/* Margin % line */}
-          {weeks.length > 1 && (() => {
-            const points = margins.map((m, i) => {
-              const x = padLeft + 4 + i * barGroupWidth + barWidth;
-              const y = chartHeight - (m / maxPct) * chartHeight;
-              return { x, y, m };
-            });
-            const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-            return (
-              <>
-                <path d={path} fill="none" stroke={colors.primary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                {points.map((p, i) => (
-                  <g key={i}>
-                    <circle cx={p.x} cy={p.y} r={3.5} fill={colors.bgWhite} stroke={colors.primary} strokeWidth={2} />
-                    <title>{`Margin: ${p.m.toFixed(1)}%`}</title>
-                  </g>
-                ))}
-              </>
-            );
-          })()}
-
-          {/* X labels */}
-          {weeks.map((w, i) => (
-            <text key={w.weekId} x={padLeft + 4 + i * barGroupWidth + barWidth} y={chartHeight + 16} textAnchor="middle" fontSize={10} fill={colors.textSecondary}>
-              {w.weekLabel}
-            </text>
-          ))}
-
           <line x1={padLeft} y1={chartHeight} x2={chartWidth - padRight} y2={chartHeight} stroke={colors.border} strokeWidth={1} />
         </svg>
+
+        {/* Floating tooltip */}
+        {tooltip && (
+          <div
+            style={{
+              position: 'absolute',
+              left: tooltip.x,
+              top: Math.max(tooltip.y - 20, 10),
+              transform: 'translateX(-50%)',
+              background: colors.bgWhite,
+              border: `1px solid ${colors.border}`,
+              borderRadius: radii.lg,
+              boxShadow: shadows.modal,
+              padding: '12px 16px',
+              zIndex: 10,
+              minWidth: 220,
+              pointerEvents: 'none',
+              fontFamily,
+            }}
+          >
+            <div style={{ fontWeight: 700, fontSize: fontSizes.md, color: colors.text, marginBottom: 8, borderBottom: `1px solid ${colors.borderSubtle}`, paddingBottom: 6 }}>
+              {tooltip.weekLabel}
+            </div>
+            {SERIES_CONFIG.map((s) => {
+              const val = tooltip[s.key as keyof TooltipData] as number;
+              const formatted = s.key === 'pctProfit'
+                ? val.toFixed(2)
+                : s.key === 'loadCount'
+                  ? String(val)
+                  : formatCurrency(val);
+              return (
+                <div key={s.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', fontSize: fontSizes.sm }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
+                    <span style={{ color: colors.textSecondary }}>{s.label}</span>
+                  </div>
+                  <span style={{ fontWeight: 600, color: colors.text, fontVariantNumeric: 'tabular-nums' }}>{formatted}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
