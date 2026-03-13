@@ -18,6 +18,7 @@ import {
   colors,
   fontSizes,
   spacing,
+  fontFamily,
 } from '@/lib/styles';
 
 interface AppShellProps {
@@ -117,15 +118,15 @@ export function AppShell({
     item.match?.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/')) ?? false;
 
   return (
-    <div>
+    <div style={{ fontFamily }}>
       {/* ── Sidebar ── */}
       <aside style={sidebarStyle}>
         {/* Brand */}
         <div style={sidebarBrandStyle}>
-          <div style={{ fontSize: fontSizes.xl, fontWeight: 700, letterSpacing: '-0.01em' }}>
+          <div style={{ fontSize: fontSizes.lg, fontWeight: 700, letterSpacing: '-0.02em', color: '#fff' }}>
             {APP_NAME}
           </div>
-          <div style={{ fontSize: fontSizes.xs, color: 'rgba(255,255,255,0.4)', marginTop: spacing.xs }}>
+          <div style={{ fontSize: fontSizes.xs, color: colors.textOnDarkMuted, marginTop: spacing.xs }}>
             Transportation Management
           </div>
         </div>
@@ -157,28 +158,29 @@ export function AppShell({
 
         {/* User footer */}
         <div style={sidebarFooterStyle}>
-          <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: fontSizes.base, fontWeight: 500, marginBottom: spacing.xs }}>
+          <div style={{ color: colors.textOnDark, fontSize: fontSizes.base, fontWeight: 500, marginBottom: spacing.xs }}>
             {user.firstName} {user.lastName}
           </div>
-          <div style={{ fontSize: fontSizes.xs, color: 'rgba(255,255,255,0.4)', marginBottom: spacing.md, textTransform: 'capitalize' }}>
+          <div style={{ fontSize: fontSizes.xs, color: colors.textOnDarkMuted, marginBottom: spacing.md, textTransform: 'capitalize' }}>
             {user.role}
           </div>
           <button
             onClick={onLogout}
             style={{
               background: 'none',
-              border: '1px solid rgba(255,255,255,0.15)',
-              color: 'rgba(255,255,255,0.6)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: colors.textOnDarkMuted,
               fontSize: fontSizes.sm,
+              fontFamily,
               padding: `${spacing.xs} ${spacing.lg}`,
               borderRadius: 4,
               cursor: 'pointer',
               width: '100%',
               textAlign: 'center',
-              transition: 'background 0.15s ease',
+              transition: 'all 0.12s ease',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = colors.textOnDarkMuted; }}
           >
             Sign Out
           </button>
@@ -190,8 +192,8 @@ export function AppShell({
         {/* Top bar */}
         <div style={topBarStyle}>
           <div>
-            {title && <h1 style={{ ...pageTitleStyle, fontSize: fontSizes.xl }}>{title}</h1>}
-            {subtitle && <p style={{ ...pageSubtitleStyle, margin: `${spacing.xs} 0 0` }}>{subtitle}</p>}
+            {title && <h1 style={{ ...pageTitleStyle, fontSize: fontSizes.lg }}>{title}</h1>}
+            {subtitle && <p style={{ ...pageSubtitleStyle, margin: `2px 0 0` }}>{subtitle}</p>}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
             <span style={{ fontSize: fontSizes.sm, color: colors.textMuted }}>

@@ -1,49 +1,75 @@
 /**
  * Shared style tokens and CSS constant objects for the LOL vNext web UI.
  * Every page should import from here instead of re-declaring local style objects.
+ *
+ * Design language: Linear / Ramp / premium admin SaaS
+ * — clean, calm, sharp, data-dense but readable
  */
 
 // ── Colour tokens ──────────────────────────────────────────────
 
 export const colors = {
-  primary: '#1976d2',
-  primaryDark: '#0d47a1',
-  primaryLight: '#e3f2fd',
-  success: '#2e7d32',
-  successBg: '#e8f5e9',
-  successBorder: '#81c784',
-  warning: '#f57f17',
-  warningBg: '#fff8e1',
-  warningBorder: '#fff176',
-  danger: '#d32f2f',
-  dangerBg: '#fff5f5',
-  dangerBorder: '#ffcdd2',
-  orange: '#e65100',
-  orangeBg: '#fff3e0',
-  orangeLight: '#ff9800',
-  purple: '#7b1fa2',
-  purpleBg: '#f3e5f5',
-  teal: '#00897b',
-  text: '#222',
-  textMuted: '#888',
-  textSecondary: '#666',
-  border: '#ccc',
-  borderLight: '#e0e0e0',
-  borderSubtle: '#f0f0f0',
-  rowBorder: '#e0e0e0',
-  bgPage: '#f5f5f5',
-  bgMuted: '#fafafa',
-  bgWhite: '#fff',
-  bgHover: '#f5f9ff',
-  primaryBorder: '#90caf9',
-  slate: '#546e7a',
-  flagInactive: '#bdbdbd',
+  // Primary
+  primary: '#2563eb',
+  primaryDark: '#1d4ed8',
+  primaryLight: '#eff6ff',
+  primaryBorder: '#bfdbfe',
+
+  // Semantic
+  success: '#16a34a',
+  successBg: '#f0fdf4',
+  successBorder: '#bbf7d0',
+  warning: '#d97706',
+  warningBg: '#fffbeb',
+  warningBorder: '#fde68a',
+  danger: '#dc2626',
+  dangerBg: '#fef2f2',
+  dangerBorder: '#fecaca',
+
+  // Accent
+  orange: '#ea580c',
+  orangeBg: '#fff7ed',
+  orangeLight: '#f97316',
+  purple: '#7c3aed',
+  purpleBg: '#f5f3ff',
+  teal: '#0d9488',
+
+  // Text hierarchy
+  text: '#0f172a',
+  textSecondary: '#475569',
+  textMuted: '#94a3b8',
+  textOnDark: 'rgba(255,255,255,0.88)',
+  textOnDarkMuted: 'rgba(255,255,255,0.48)',
+
+  // Borders
+  border: '#e2e8f0',
+  borderLight: '#f1f5f9',
+  borderSubtle: '#f8fafc',
+  rowBorder: '#f1f5f9',
+
+  // Backgrounds
+  bgPage: '#f8fafc',
+  bgMuted: '#f8fafc',
+  bgWhite: '#ffffff',
+  bgHover: '#f1f5f9',
+  bgSidebar: '#0f172a',
+  bgSidebarHover: 'rgba(255,255,255,0.06)',
+  bgSidebarActive: 'rgba(255,255,255,0.10)',
+
+  // Legacy aliases
+  slate: '#475569',
+  flagInactive: '#cbd5e1',
 } as const;
+
+// ── Font family ───────────────────────────────────────────────
+
+export const fontFamily =
+  "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif";
 
 // ── Spacing ────────────────────────────────────────────────────
 
 export const spacing = {
-  pageX: '2rem',
+  pageX: '1.5rem',
   pageY: '1.5rem',
   xs: '0.25rem',
   sm: '0.375rem',
@@ -51,46 +77,58 @@ export const spacing = {
   lg: '0.75rem',
   xl: '1rem',
   xxl: '1.5rem',
+  '3xl': '2rem',
+  '4xl': '2.5rem',
 } as const;
 
 // ── Typography ─────────────────────────────────────────────────
 
 export const fontSizes = {
-  xs: '0.6875rem',
-  sm: '0.75rem',
-  base: '0.8125rem',
-  md: '0.875rem',
-  lg: '1rem',
-  xl: '1.125rem',
-  xxl: '1.25rem',
-  title: '1.5rem',
+  xs: '0.6875rem',     // 11px
+  sm: '0.75rem',       // 12px
+  base: '0.8125rem',   // 13px
+  md: '0.875rem',      // 14px
+  lg: '1rem',          // 16px
+  xl: '1.125rem',      // 18px
+  xxl: '1.25rem',      // 20px
+  title: '1.5rem',     // 24px
+  display: '1.75rem',  // 28px
+} as const;
+
+// ── Line height ───────────────────────────────────────────────
+
+export const lineHeights = {
+  tight: 1.25,
+  normal: 1.5,
+  relaxed: 1.65,
 } as const;
 
 // ── Radius ─────────────────────────────────────────────────────
 
 export const radii = {
-  sm: 3,
-  md: 4,
-  lg: 6,
-  xl: 8,
-  pill: 12,
+  sm: 4,
+  md: 6,
+  lg: 8,
+  xl: 10,
+  pill: 9999,
 } as const;
 
 // ── Shadows ────────────────────────────────────────────────────
 
 export const shadows = {
-  card: '0 1px 3px rgba(0,0,0,0.08)',
-  dropdown: '0 4px 12px rgba(0,0,0,0.12)',
-  modal: '0 4px 24px rgba(0,0,0,0.15)',
-  login: '0 2px 8px rgba(0,0,0,0.1)',
-  stickyBar: '0 2px 8px rgba(0,0,0,0.06)',
+  xs: '0 1px 2px rgba(15,23,42,0.04)',
+  card: '0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04)',
+  dropdown: '0 4px 16px rgba(15,23,42,0.10)',
+  modal: '0 8px 32px rgba(15,23,42,0.14), 0 2px 6px rgba(15,23,42,0.06)',
+  login: '0 4px 24px rgba(15,23,42,0.08)',
+  stickyBar: '0 1px 4px rgba(15,23,42,0.04)',
 } as const;
 
 // ── Transition ─────────────────────────────────────────────────
 
 export const transition = {
-  fast: '0.15s ease',
-  normal: '0.2s ease',
+  fast: '0.12s ease',
+  normal: '0.18s ease',
 } as const;
 
 // ══════════════════════════════════════════════════════════════
@@ -101,51 +139,64 @@ const btnBase: React.CSSProperties = {
   borderRadius: radii.md,
   cursor: 'pointer',
   fontWeight: 500,
+  fontFamily,
   lineHeight: 1.4,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: spacing.xs,
-  transition: `background ${transition.fast}, opacity ${transition.fast}`,
+  gap: spacing.sm,
+  transition: `all ${transition.fast}`,
+  outline: 'none',
 };
 
-/** Standard navigation button (header) */
+/** Standard navigation button (toolbar) */
 export const navBtnStyle: React.CSSProperties = {
   ...btnBase,
-  padding: `${spacing.sm} ${spacing.lg}`,
+  padding: '6px 12px',
   background: colors.bgWhite,
   border: `1px solid ${colors.border}`,
   fontSize: fontSizes.base,
-  color: colors.text,
+  color: colors.textSecondary,
 };
 
 /** Primary action button */
 export const primaryBtnStyle: React.CSSProperties = {
   ...btnBase,
-  padding: `${spacing.md} ${spacing.xl}`,
+  padding: '8px 16px',
   background: colors.primary,
-  color: colors.bgWhite,
+  color: '#fff',
   border: 'none',
   fontSize: fontSizes.md,
   fontWeight: 600,
+  boxShadow: '0 1px 2px rgba(37,99,235,0.2)',
 };
 
 /** Secondary / cancel button */
 export const secondaryBtnStyle: React.CSSProperties = {
   ...btnBase,
-  padding: `${spacing.md} ${spacing.xl}`,
+  padding: '8px 16px',
   background: colors.bgWhite,
-  color: colors.text,
+  color: colors.textSecondary,
   border: `1px solid ${colors.border}`,
   fontSize: fontSizes.md,
+};
+
+/** Ghost button — borderless, subtle */
+export const ghostBtnStyle: React.CSSProperties = {
+  ...btnBase,
+  padding: '6px 12px',
+  background: 'transparent',
+  color: colors.textSecondary,
+  border: '1px solid transparent',
+  fontSize: fontSizes.base,
 };
 
 /** Danger / destructive action button */
 export const dangerBtnStyle: React.CSSProperties = {
   ...btnBase,
-  padding: `${spacing.md} ${spacing.xl}`,
+  padding: '8px 16px',
   background: colors.danger,
-  color: colors.bgWhite,
+  color: '#fff',
   border: 'none',
   fontSize: fontSizes.md,
   fontWeight: 600,
@@ -154,18 +205,19 @@ export const dangerBtnStyle: React.CSSProperties = {
 /** Small inline action button (table row) */
 export const smallBtnStyle: React.CSSProperties = {
   ...btnBase,
-  padding: '0.25rem 0.5rem',
+  padding: '4px 10px',
   background: colors.bgWhite,
   border: `1px solid ${colors.border}`,
   fontSize: fontSizes.sm,
   fontWeight: 500,
+  color: colors.textSecondary,
 };
 
 /** Icon-only remove/delete button */
 export const iconBtnStyle: React.CSSProperties = {
   ...btnBase,
-  padding: '0.125rem 0.5rem',
-  background: colors.bgWhite,
+  padding: '2px 8px',
+  background: 'transparent',
   border: `1px solid ${colors.border}`,
   fontSize: fontSizes.lg,
   fontWeight: 600,
@@ -175,7 +227,7 @@ export const iconBtnStyle: React.CSSProperties = {
 /** Toolbar action button (banner actions) */
 export const actionBtnStyle: React.CSSProperties = {
   ...btnBase,
-  padding: '0.3rem 0.625rem',
+  padding: '4px 10px',
   fontSize: fontSizes.sm,
   fontWeight: 600,
 };
@@ -184,12 +236,13 @@ export const actionBtnStyle: React.CSSProperties = {
 export function tabBtnStyle(active: boolean): React.CSSProperties {
   return {
     ...btnBase,
-    padding: `${spacing.md} ${spacing.xl}`,
-    fontSize: fontSizes.md,
+    padding: '6px 14px',
+    fontSize: fontSizes.base,
     fontWeight: active ? 600 : 400,
-    background: active ? colors.primary : colors.bgWhite,
-    color: active ? colors.bgWhite : colors.text,
+    background: active ? colors.primary : 'transparent',
+    color: active ? '#fff' : colors.textSecondary,
     border: active ? `1px solid ${colors.primary}` : `1px solid ${colors.border}`,
+    boxShadow: active ? '0 1px 2px rgba(37,99,235,0.15)' : 'none',
   };
 }
 
@@ -201,9 +254,10 @@ export function tabBtnStyle(active: boolean): React.CSSProperties {
 export const tableWrapperStyle: React.CSSProperties = {
   overflowX: 'auto',
   overflowY: 'auto',
-  border: `1px solid ${colors.borderLight}`,
+  border: `1px solid ${colors.border}`,
   borderRadius: radii.lg,
   maxHeight: 'calc(100vh - 280px)',
+  background: colors.bgWhite,
 };
 
 /** Table element itself */
@@ -211,30 +265,32 @@ export const tableStyle: React.CSSProperties = {
   width: '100%',
   borderCollapse: 'separate',
   borderSpacing: 0,
+  fontFamily,
 };
 
 /** Table header cell — compact, uppercase, sticky */
 export const thStyle: React.CSSProperties = {
-  padding: '0.5rem 0.75rem',
+  padding: '10px 12px',
   textAlign: 'left',
-  borderBottom: `2px solid ${colors.borderLight}`,
-  fontSize: fontSizes.sm,
+  borderBottom: `1px solid ${colors.border}`,
+  fontSize: fontSizes.xs,
   fontWeight: 600,
   textTransform: 'uppercase',
-  letterSpacing: '0.03em',
-  color: colors.textSecondary,
+  letterSpacing: '0.05em',
+  color: colors.textMuted,
   whiteSpace: 'nowrap',
   position: 'sticky',
   top: 0,
-  background: colors.bgWhite,
+  background: colors.bgMuted,
   zIndex: 2,
 };
 
 /** Table body cell */
 export const tdStyle: React.CSSProperties = {
-  padding: '0.5rem 0.75rem',
-  borderBottom: `1px solid ${colors.borderSubtle}`,
+  padding: '8px 12px',
+  borderBottom: `1px solid ${colors.borderLight}`,
   fontSize: fontSizes.base,
+  color: colors.text,
   whiteSpace: 'nowrap',
 };
 
@@ -263,7 +319,7 @@ export const tdAction: React.CSSProperties = {
 export const totalRowStyle: React.CSSProperties = {
   background: colors.bgMuted,
   fontWeight: 600,
-  borderTop: `2px solid ${colors.borderLight}`,
+  borderTop: `2px solid ${colors.border}`,
 };
 
 /** Zebra-striped row handlers — returns style + hover handlers for a given row index */
@@ -289,7 +345,7 @@ export const labelStyle: React.CSSProperties = {
   display: 'block',
   marginBottom: 6,
   fontSize: fontSizes.sm,
-  fontWeight: 600,
+  fontWeight: 500,
   color: colors.textSecondary,
   letterSpacing: '0.01em',
 };
@@ -297,10 +353,11 @@ export const labelStyle: React.CSSProperties = {
 /** Form input / select base */
 export const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '0.5rem 0.625rem',
-  border: `1px solid ${colors.borderLight}`,
-  borderRadius: radii.lg,
+  padding: '8px 12px',
+  border: `1px solid ${colors.border}`,
+  borderRadius: radii.md,
   fontSize: fontSizes.md,
+  fontFamily,
   boxSizing: 'border-box',
   background: colors.bgWhite,
   color: colors.text,
@@ -323,19 +380,21 @@ export const sectionStyle: React.CSSProperties = {
   marginBottom: spacing.xxl,
   padding: spacing.xxl,
   background: colors.bgWhite,
-  borderRadius: radii.xl,
-  border: `1px solid ${colors.borderLight}`,
-  boxShadow: shadows.card,
+  borderRadius: radii.lg,
+  border: `1px solid ${colors.border}`,
+  boxShadow: shadows.xs,
 };
 
 /** Form section heading */
 export const sectionTitleStyle: React.CSSProperties = {
   margin: `0 0 ${spacing.xl}`,
-  fontSize: fontSizes.lg,
+  fontSize: fontSizes.md,
   fontWeight: 600,
   color: colors.text,
   paddingBottom: spacing.md,
-  borderBottom: `1px solid ${colors.borderSubtle}`,
+  borderBottom: `1px solid ${colors.borderLight}`,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
 };
 
 /** Validation error container */
@@ -344,7 +403,7 @@ export const validationErrorStyle: React.CSSProperties = {
   marginBottom: spacing.xl,
   background: colors.dangerBg,
   border: `1px solid ${colors.dangerBorder}`,
-  borderRadius: radii.lg,
+  borderRadius: radii.md,
   fontSize: fontSizes.md,
   color: colors.danger,
   lineHeight: 1.6,
@@ -353,7 +412,7 @@ export const validationErrorStyle: React.CSSProperties = {
 /** Disabled / read-only input override */
 export const inputDisabledStyle: React.CSSProperties = {
   ...inputStyle,
-  background: colors.bgPage,
+  background: colors.bgMuted,
   color: colors.textMuted,
   cursor: 'not-allowed',
 };
@@ -364,17 +423,17 @@ export const formActionsStyle: React.CSSProperties = {
   gap: spacing.lg,
   justifyContent: 'flex-end',
   paddingTop: spacing.xxl,
-  borderTop: `1px solid ${colors.borderSubtle}`,
+  borderTop: `1px solid ${colors.borderLight}`,
   marginTop: spacing.xl,
 };
 
 /** Premium card container — for KPI, info panels, chart wrappers */
 export const cardStyle: React.CSSProperties = {
   background: colors.bgWhite,
-  borderRadius: radii.xl,
-  border: `1px solid ${colors.borderLight}`,
+  borderRadius: radii.lg,
+  border: `1px solid ${colors.border}`,
   boxShadow: shadows.card,
-  padding: '1rem 1.25rem',
+  padding: '16px 20px',
 };
 
 // ── Grid helpers ───────────────────────────────────────────────
@@ -399,11 +458,12 @@ export const gridThree: React.CSSProperties = {
 export const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(0,0,0,0.4)',
+  background: 'rgba(15,23,42,0.45)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   zIndex: 1000,
+  backdropFilter: 'blur(2px)',
 };
 
 /** Modal card */
@@ -414,6 +474,7 @@ export const modalStyle: React.CSSProperties = {
   maxHeight: '80vh',
   overflowY: 'auto',
   boxShadow: shadows.modal,
+  border: `1px solid ${colors.border}`,
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -423,17 +484,18 @@ export const modalStyle: React.CSSProperties = {
 interface BadgeTheme {
   bg: string;
   fg: string;
+  border?: string;
 }
 
 const BADGE_THEMES = {
-  success: { bg: colors.successBg, fg: colors.success },
-  warning: { bg: colors.warningBg, fg: colors.warning },
-  danger: { bg: colors.dangerBg, fg: colors.danger },
-  info: { bg: colors.primaryLight, fg: colors.primaryDark },
-  muted: { bg: colors.bgPage, fg: colors.textMuted },
+  success: { bg: colors.successBg, fg: colors.success, border: colors.successBorder },
+  warning: { bg: colors.warningBg, fg: colors.warning, border: colors.warningBorder },
+  danger: { bg: colors.dangerBg, fg: colors.danger, border: colors.dangerBorder },
+  info: { bg: colors.primaryLight, fg: colors.primaryDark, border: colors.primaryBorder },
+  muted: { bg: colors.bgMuted, fg: colors.textMuted },
   purple: { bg: colors.purpleBg, fg: colors.purple },
   orange: { bg: colors.orangeBg, fg: colors.orange },
-  teal: { bg: '#e0f2f1', fg: colors.teal },
+  teal: { bg: '#f0fdfa', fg: colors.teal },
   solidInfo: { bg: colors.primaryDark, fg: '#fff' },
   solidWarning: { bg: colors.orangeLight, fg: '#fff' },
   solidSuccess: { bg: colors.success, fg: '#fff' },
@@ -447,15 +509,16 @@ export function badgeStyle(variant: BadgeVariant): React.CSSProperties {
   const theme: BadgeTheme = BADGE_THEMES[variant];
   return {
     display: 'inline-block',
-    padding: '0.175rem 0.625rem',
-    borderRadius: radii.pill,
-    fontSize: fontSizes.sm,
+    padding: '2px 8px',
+    borderRadius: radii.sm,
+    fontSize: fontSizes.xs,
     fontWeight: 600,
     background: theme.bg,
     color: theme.fg,
-    lineHeight: 1.4,
+    lineHeight: 1.5,
     whiteSpace: 'nowrap',
-    letterSpacing: '0.01em',
+    letterSpacing: '0.02em',
+    textTransform: 'uppercase',
   };
 }
 
@@ -491,7 +554,7 @@ export function tagStyle(variant: BadgeVariant): React.CSSProperties {
   const theme: BadgeTheme = BADGE_THEMES[variant];
   return {
     display: 'inline-block',
-    padding: '1px 8px',
+    padding: '1px 6px',
     borderRadius: radii.sm,
     fontSize: fontSizes.xs,
     fontWeight: 700,
@@ -500,6 +563,8 @@ export function tagStyle(variant: BadgeVariant): React.CSSProperties {
     verticalAlign: 'middle',
     lineHeight: 1.5,
     whiteSpace: 'nowrap',
+    textTransform: 'uppercase',
+    letterSpacing: '0.03em',
   };
 }
 
@@ -509,14 +574,14 @@ export function tagStyle(variant: BadgeVariant): React.CSSProperties {
 
 export function bannerStyle(variant: 'info' | 'warning' | 'success' | 'danger'): React.CSSProperties {
   const map = {
-    info: { bg: colors.primaryLight, fg: colors.primaryDark, border: '#90caf9' },
+    info: { bg: colors.primaryLight, fg: colors.primaryDark, border: colors.primaryBorder },
     warning: { bg: colors.warningBg, fg: colors.warning, border: colors.warningBorder },
     success: { bg: colors.successBg, fg: colors.success, border: colors.successBorder },
     danger: { bg: colors.dangerBg, fg: colors.danger, border: colors.dangerBorder },
   };
   const t = map[variant];
   return {
-    padding: `${spacing.md} ${spacing.lg}`,
+    padding: '10px 14px',
     background: t.bg,
     border: `1px solid ${t.border}`,
     borderRadius: radii.md,
@@ -559,9 +624,9 @@ export const stickyToolbarStyle: React.CSSProperties = {
   top: 0,
   zIndex: 10,
   background: colors.bgWhite,
-  borderBottom: `1px solid ${colors.borderSubtle}`,
+  borderBottom: `1px solid ${colors.borderLight}`,
   boxShadow: shadows.stickyBar,
-  padding: `${spacing.lg} 0`,
+  padding: '10px 0',
   marginBottom: spacing.xl,
   display: 'flex',
   justifyContent: 'space-between',
@@ -593,16 +658,17 @@ export const toolbarGroupStyle: React.CSSProperties = {
 /** Page title — large, bold heading */
 export const pageTitleStyle: React.CSSProperties = {
   margin: 0,
-  fontSize: fontSizes.xxl,
-  fontWeight: 700,
+  fontSize: fontSizes.xl,
+  fontWeight: 600,
   color: colors.text,
-  lineHeight: 1.3,
+  lineHeight: lineHeights.tight,
+  letterSpacing: '-0.01em',
 };
 
 /** Page subtitle / breadcrumb line below the title */
 export const pageSubtitleStyle: React.CSSProperties = {
   margin: `${spacing.xs} 0 0`,
-  fontSize: fontSizes.md,
+  fontSize: fontSizes.base,
   color: colors.textMuted,
   fontWeight: 400,
 };
@@ -610,9 +676,10 @@ export const pageSubtitleStyle: React.CSSProperties = {
 /** Section heading (e.g. "Salary Rules", "Archive") within a page */
 export const sectionHeadingStyle: React.CSSProperties = {
   margin: `0 0 ${spacing.lg}`,
-  fontSize: fontSizes.xl,
+  fontSize: fontSizes.lg,
   fontWeight: 600,
   color: colors.text,
+  letterSpacing: '-0.005em',
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -627,10 +694,12 @@ export function disabledBtnStyle(
   if (!isDisabled) return base;
   return {
     ...base,
-    background: colors.borderLight,
+    background: colors.bgMuted,
     color: colors.textMuted,
     cursor: 'not-allowed',
-    opacity: 0.7,
+    opacity: 0.6,
+    border: `1px solid ${colors.border}`,
+    boxShadow: 'none',
   };
 }
 
@@ -644,6 +713,7 @@ export function loadingBtnStyle(
     ...base,
     background: colors.textMuted,
     cursor: 'default',
+    boxShadow: 'none',
   };
 }
 
@@ -654,20 +724,23 @@ export function loadingBtnStyle(
 /** Audit log panel container */
 export const auditPanelStyle: React.CSSProperties = {
   marginBottom: spacing.xl,
-  border: `1px solid ${colors.borderLight}`,
+  border: `1px solid ${colors.border}`,
   borderRadius: radii.lg,
-  background: colors.bgMuted,
+  background: colors.bgWhite,
   maxHeight: 300,
   overflowY: 'auto',
 };
 
 /** Audit log panel header bar */
 export const auditPanelHeaderStyle: React.CSSProperties = {
-  padding: `${spacing.md} ${spacing.lg}`,
-  borderBottom: `1px solid ${colors.borderLight}`,
+  padding: '8px 12px',
+  borderBottom: `1px solid ${colors.border}`,
   fontWeight: 600,
-  fontSize: fontSizes.base,
-  background: colors.bgPage,
+  fontSize: fontSizes.sm,
+  color: colors.textMuted,
+  background: colors.bgMuted,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
 };
 
 /** Audit log empty state */
@@ -689,21 +762,25 @@ export const auditTableStyle: React.CSSProperties = {
 export const auditThStyle: React.CSSProperties = {
   padding: `${spacing.sm} ${spacing.lg}`,
   fontWeight: 600,
-  background: colors.bgPage,
+  background: colors.bgMuted,
   textAlign: 'left',
+  fontSize: fontSizes.xs,
+  color: colors.textMuted,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
 };
 
 /** Audit table data cell */
 export const auditTdStyle: React.CSSProperties = {
   padding: `${spacing.sm} ${spacing.lg}`,
-  borderBottom: `1px solid ${colors.borderSubtle}`,
+  borderBottom: `1px solid ${colors.borderLight}`,
 };
 
 // ══════════════════════════════════════════════════════════════
 // APP SHELL — SIDEBAR & TOP BAR
 // ══════════════════════════════════════════════════════════════
 
-export const SIDEBAR_WIDTH = 220;
+export const SIDEBAR_WIDTH = 232;
 
 /** Fixed sidebar container */
 export const sidebarStyle: React.CSSProperties = {
@@ -712,18 +789,19 @@ export const sidebarStyle: React.CSSProperties = {
   left: 0,
   bottom: 0,
   width: SIDEBAR_WIDTH,
-  background: colors.text,
-  color: colors.bgWhite,
+  background: colors.bgSidebar,
+  color: colors.textOnDark,
   display: 'flex',
   flexDirection: 'column',
   zIndex: 30,
   overflow: 'hidden',
+  borderRight: '1px solid rgba(255,255,255,0.06)',
 };
 
 /** Sidebar brand / logo area */
 export const sidebarBrandStyle: React.CSSProperties = {
-  padding: `${spacing.xxl} ${spacing.xl}`,
-  borderBottom: '1px solid rgba(255,255,255,0.08)',
+  padding: '20px 20px 16px',
+  borderBottom: '1px solid rgba(255,255,255,0.06)',
 };
 
 /** Sidebar nav list container */
@@ -732,7 +810,7 @@ export const sidebarNavStyle: React.CSSProperties = {
   padding: `${spacing.lg} 0`,
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing.xs,
+  gap: '2px',
 };
 
 /** Sidebar nav item */
@@ -741,33 +819,28 @@ export function sidebarItemStyle(active: boolean): React.CSSProperties {
     display: 'flex',
     alignItems: 'center',
     gap: spacing.lg,
-    padding: `${spacing.md} ${spacing.xl}`,
+    padding: '8px 20px',
     fontSize: fontSizes.md,
-    fontWeight: active ? 600 : 400,
-    color: active ? colors.bgWhite : 'rgba(255,255,255,0.6)',
-    background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
-    borderLeft: active ? `3px solid ${colors.primary}` : '3px solid transparent',
-    cursor: 'pointer',
-    border: 'none',
+    fontWeight: active ? 500 : 400,
+    color: active ? '#fff' : colors.textOnDarkMuted,
+    background: active ? colors.bgSidebarActive : 'transparent',
+    borderLeft: `2px solid ${active ? colors.primary : 'transparent'}`,
     borderRight: 'none',
     borderTop: 'none',
     borderBottom: 'none',
-    borderLeftWidth: 3,
-    borderLeftStyle: 'solid',
-    borderLeftColor: active ? colors.primary : 'transparent',
-    textAlign: 'left',
+    cursor: 'pointer',
+    textAlign: 'left' as const,
     width: '100%',
-    transition: `background ${transition.fast}, color ${transition.fast}`,
-    letterSpacing: '0.01em',
+    transition: `all ${transition.fast}`,
+    letterSpacing: '0.005em',
   };
 }
 
 /** Sidebar user/footer area */
 export const sidebarFooterStyle: React.CSSProperties = {
-  padding: `${spacing.lg} ${spacing.xl}`,
-  borderTop: '1px solid rgba(255,255,255,0.08)',
+  padding: '12px 20px 16px',
+  borderTop: '1px solid rgba(255,255,255,0.06)',
   fontSize: fontSizes.sm,
-  color: 'rgba(255,255,255,0.5)',
 };
 
 /** Top bar in sidebar layout */
@@ -776,11 +849,12 @@ export const topBarStyle: React.CSSProperties = {
   top: 0,
   zIndex: 20,
   background: colors.bgWhite,
-  borderBottom: `1px solid ${colors.borderLight}`,
-  padding: `${spacing.lg} ${spacing.xxl}`,
+  borderBottom: `1px solid ${colors.border}`,
+  padding: `12px ${spacing.xxl}`,
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
+  minHeight: 56,
 };
 
 /** Main content area offset from sidebar */
@@ -792,7 +866,7 @@ export const mainContentStyle: React.CSSProperties = {
 
 /** Content padding inside main area */
 export const contentPaddingStyle: React.CSSProperties = {
-  padding: spacing.xxl,
+  padding: '20px 24px 40px',
 };
 
 /** Currency formatter */

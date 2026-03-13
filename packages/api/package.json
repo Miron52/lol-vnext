@@ -13,7 +13,9 @@
     "test:cov": "jest --coverage",
     "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/database/datasource.ts",
     "migration:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/database/datasource.ts",
-    "seed": "ts-node src/identity/seed/admin.seed.ts"
+    "seed": "ts-node src/identity/seed/admin.seed.ts",
+    "seed:demo": "ts-node src/database/seed-demo.ts",
+    "seed:prod": "ts-node src/database/seed-production.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",

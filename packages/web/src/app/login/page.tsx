@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { APP_NAME } from '@lol/shared';
 import { useAuth } from '@/lib/auth';
 import { getErrorMessage } from '@/lib/errors';
-import { colors, fontSizes, radii, shadows, spacing, inputStyle, labelStyle, primaryBtnStyle, loadingBtnStyle, validationErrorStyle } from '@/lib/styles';
+import { colors, fontSizes, fontFamily, radii, shadows, spacing, inputStyle, labelStyle, primaryBtnStyle, loadingBtnStyle, validationErrorStyle } from '@/lib/styles';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -36,23 +36,24 @@ export default function LoginPage() {
         minHeight: '100vh',
         alignItems: 'center',
         justifyContent: 'center',
-        background: `linear-gradient(135deg, ${colors.bgPage} 0%, ${colors.primaryLight} 100%)`,
+        background: colors.bgPage,
+        fontFamily,
       }}
     >
       <form
         onSubmit={handleSubmit}
         style={{
           background: colors.bgWhite,
-          padding: '2.5rem 2rem',
+          padding: '40px 36px 36px',
           borderRadius: radii.xl,
-          boxShadow: shadows.modal,
+          boxShadow: shadows.login,
           width: 380,
-          border: `1px solid ${colors.borderLight}`,
+          border: `1px solid ${colors.border}`,
         }}
       >
-        <div style={{ textAlign: 'center', marginBottom: spacing.xxl }}>
-          <h1 style={{ margin: 0, fontSize: fontSizes.title, fontWeight: 700, color: colors.text }}>{APP_NAME}</h1>
-          <p style={{ margin: `${spacing.sm} 0 0`, fontSize: fontSizes.md, color: colors.textMuted }}>
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+          <h1 style={{ margin: 0, fontSize: fontSizes.xxl, fontWeight: 700, color: colors.text, letterSpacing: '-0.02em' }}>{APP_NAME}</h1>
+          <p style={{ margin: `6px 0 0`, fontSize: fontSizes.md, color: colors.textMuted, fontWeight: 400 }}>
             Sign in to your account
           </p>
         </div>
@@ -89,7 +90,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          style={{ ...loadingBtnStyle(primaryBtnStyle, loading), width: '100%', padding: `${spacing.lg} ${spacing.xl}`, fontSize: fontSizes.md }}
+          style={{ ...loadingBtnStyle(primaryBtnStyle, loading), width: '100%', padding: `10px ${spacing.xl}`, fontSize: fontSizes.md }}
         >
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
