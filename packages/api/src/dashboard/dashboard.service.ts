@@ -155,14 +155,20 @@ export class DashboardService {
       toState: string;
       loadCount: string;
       grossAmount: string;
+      driverCostAmount: string;
       profitAmount: string;
+      otrAmount: string;
+      netProfitAmount: string;
     }[] = await this.loadsRepo
       .createQueryBuilder('load')
       .select('load.fromState', 'fromState')
       .addSelect('load.toState', 'toState')
       .addSelect('COUNT(*)::int', 'loadCount')
       .addSelect('COALESCE(SUM(load.grossAmount), 0)', 'grossAmount')
+      .addSelect('COALESCE(SUM(load.driverCostAmount), 0)', 'driverCostAmount')
       .addSelect('COALESCE(SUM(load.profitAmount), 0)', 'profitAmount')
+      .addSelect('COALESCE(SUM(load.otrAmount), 0)', 'otrAmount')
+      .addSelect('COALESCE(SUM(load.netProfitAmount), 0)', 'netProfitAmount')
       .where('load.archivedAt IS NULL')
       .andWhere('load.weekId IN (:...weekIds)', { weekIds })
       .groupBy('load.fromState')
@@ -176,7 +182,10 @@ export class DashboardService {
       toState: r.toState,
       loadCount: Number(r.loadCount),
       grossAmount: round2(Number(r.grossAmount)),
+      driverCostAmount: round2(Number(r.driverCostAmount)),
       profitAmount: round2(Number(r.profitAmount)),
+      otrAmount: round2(Number(r.otrAmount)),
+      netProfitAmount: round2(Number(r.netProfitAmount)),
     }));
 
     // ── 5. Flag counts ──

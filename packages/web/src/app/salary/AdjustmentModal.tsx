@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SalaryAdjustment } from '@lol/shared';
+import { useI18n } from '@/lib/i18n';
 import {
   overlayStyle,
   modalStyle,
@@ -37,6 +38,7 @@ interface Props {
 }
 
 export function AdjustmentModal({ dispatcherName, existingAdjustments, onSave, onClose }: Props) {
+  const { t } = useI18n();
   const [adjustments, setAdjustments] = useState<AdjustmentInput[]>(
     existingAdjustments.length > 0
       ? existingAdjustments.map((a) => ({ type: a.type, amount: a.amount, note: a.note }))
@@ -78,20 +80,20 @@ export function AdjustmentModal({ dispatcherName, existingAdjustments, onSave, o
     <div style={overlayStyle}>
       <div style={{ ...modalStyle, width: '90%', maxWidth: 600 }}>
         <h3 style={{ ...sectionHeadingStyle, fontSize: fontSizes.lg }}>
-          Adjustments for {dispatcherName}
+          {t('adj.title', { name: dispatcherName })}
         </h3>
 
         {adjustments.length === 0 ? (
           <p style={{ color: colors.textMuted, fontSize: fontSizes.md, margin: `${spacing.md} 0 ${spacing.xl}` }}>
-            No adjustments yet. Add Other or Bonus entries below.
+            {t('adj.noAdjustments')}
           </p>
         ) : (
           <table style={{ ...tableStyle, marginBottom: spacing.lg }}>
             <thead>
               <tr>
-                <th style={thStyle}>Type</th>
-                <th style={thStyle}>Amount ($)</th>
-                <th style={thStyle}>Note</th>
+                <th style={thStyle}>{t('adj.type')}</th>
+                <th style={thStyle}>{t('adj.amount')}</th>
+                <th style={thStyle}>{t('adj.note')}</th>
                 <th style={thStyle}></th>
               </tr>
             </thead>
@@ -117,7 +119,7 @@ export function AdjustmentModal({ dispatcherName, existingAdjustments, onSave, o
                       type="text"
                       value={a.note}
                       onChange={(e) => updateRow(i, 'note', e.target.value)}
-                      placeholder="Required note..."
+                      placeholder={t('adj.notePlaceholder')}
                       style={{ ...baseInputStyle, width: '100%' }}
                     />
                   </td>
@@ -132,8 +134,8 @@ export function AdjustmentModal({ dispatcherName, existingAdjustments, onSave, o
 
         {/* Add buttons */}
         <div style={{ display: 'flex', gap: spacing.md, marginBottom: spacing.xl }}>
-          <button onClick={() => addRow('other')} style={{ ...smallBtnStyle, borderColor: colors.purple, color: colors.purple }}>+ Other</button>
-          <button onClick={() => addRow('bonus')} style={{ ...smallBtnStyle, borderColor: colors.success, color: colors.success }}>+ Bonus</button>
+          <button onClick={() => addRow('other')} style={{ ...smallBtnStyle, borderColor: colors.purple, color: colors.purple }}>{t('adj.addOther')}</button>
+          <button onClick={() => addRow('bonus')} style={{ ...smallBtnStyle, borderColor: colors.success, color: colors.success }}>{t('adj.addBonus')}</button>
         </div>
 
         {error && (
@@ -142,8 +144,8 @@ export function AdjustmentModal({ dispatcherName, existingAdjustments, onSave, o
 
         {/* Actions */}
         <div style={formActionsStyle}>
-          <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
-          <button onClick={handleSave} style={primaryBtnStyle}>Save Adjustments</button>
+          <button onClick={onClose} style={secondaryBtnStyle}>{t('common.cancel')}</button>
+          <button onClick={handleSave} style={primaryBtnStyle}>{t('adj.save')}</button>
         </div>
       </div>
     </div>

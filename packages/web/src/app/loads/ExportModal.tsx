@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { API_PREFIX } from '@lol/shared';
 import type { WeekDto } from '@lol/shared';
+import { useI18n } from '@/lib/i18n';
 import { getErrorMessage } from '@/lib/errors';
 import { labelStyle, inputStyle, checkboxLabelStyle, overlayStyle, modalStyle, primaryBtnStyle, secondaryBtnStyle, loadingBtnStyle, validationErrorStyle, formActionsStyle, sectionHeadingStyle, spacing } from '@/lib/styles';
 
@@ -16,13 +17,16 @@ interface ExportModalProps {
 
 type PaymentFilter = 'all' | 'quick_pay' | 'direct';
 
-const PAYMENT_OPTIONS: { value: PaymentFilter; label: string }[] = [
-  { value: 'all', label: 'All Loads' },
-  { value: 'quick_pay', label: 'Quick Pay Only' },
-  { value: 'direct', label: 'Direct Payment Only' },
-];
+function getPaymentOptions(t: (key: string) => string): { value: PaymentFilter; label: string }[] {
+  return [
+    { value: 'all', label: t('export.allLoads') },
+    { value: 'quick_pay', label: t('export.quickPayOnly') },
+    { value: 'direct', label: t('export.directPaymentOnly') },
+  ];
+}
 
 export function ExportModal({ weeks, selectedWeekId, onClose }: ExportModalProps) {
+  const { t } = useI18n();
   const [weekId, setWeekId] = useState(selectedWeekId);
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all');
   const [onlyUnpaid, setOnlyUnpaid] = useState(false);
@@ -79,7 +83,7 @@ export function ExportModal({ weeks, selectedWeekId, onClose }: ExportModalProps
 
       // Show success briefly, then close
       setError(null);
-      alert(`Export complete: ${rowCount} row(s) exported.`);
+      alert(t('export.complete', { count: parseInt(rowCount, 10) }));
       onClose();
     } catch (err: unknown) {
       setError(getErrorMessage(err));
@@ -96,7 +100,7 @@ export function ExportModal({ weeks, selectedWeekId, onClose }: ExportModalProps
       <div
         style={{ ...modalStyle, width: 420, maxWidth: '90vw' }}
       >
-        <h2 style={{ ...sectionHeadingStyle, marginBottom: spacing.xxl }}>Export Loads</h2>
+        <h2 style={{ ...sectionHeadingStyle, marginBottom: spacing.xxl }}>{t('export.title')}</h2>
 
         {error && (
           <div style={validationErrorStyle}>
@@ -106,7 +110,7 @@ export function ExportModal({ weeks, selectedWeekId, onClose }: ExportModalProps
 
         {/* Week selector */}
         <div style={{ marginBottom: spacing.xl }}>
-          <label style={labelStyle}>Week</label>
+          <label style={labelStyle}>{t('export.week')}</label>
           <select
             style={inputStyle}
             value={weekId}
@@ -115,7 +119,7 @@ export function ExportModal({ weeks, selectedWeekId, onClose }: ExportModalProps
             {weeks.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.label} ({w.startDate} — {w.endDate})
-                {w.isCurrent ? ' (current)' : ''}
+                {w.isCurrent ? ` (${t('common.current')})` : ''}
               </option>
             ))}
           </select>
@@ -123,13 +127,13 @@ export function ExportModal({ weeks, selectedWeekId, onClose }: ExportModalProps
 
         {/* Payment filter */}
         <div style={{ marginBottom: spacing.xl }}>
-          <label style={labelStyle}>Payment Filter</label>
+          <label style={labelStyle}>{t('export.paymentFilter')}</label>
           <select
             style={inputStyle}
             value={paymentFilter}
             onChange={(e) => setPaymentFilter(e.target.value as PaymentFilter)}
           >
-            {PAYMENT_OPTIONS.map((opt) => (
+            {getPaymentOptions(t).map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
@@ -145,7 +149,7 @@ export function ExportModal({ weeks, selectedWeekId, onClose }: ExportModalProps
               checked={onlyUnpaid}
               onChange={(e) => setOnlyUnpaid(e.target.checked)}
             />
-            Only Unpaid (driver not paid)
+            {t('export.onlyUnpaid')}
           </label>
           <label style={checkboxLabelStyle}>
             <input
@@ -153,7 +157,7 @@ export function ExportModal({ weeks, selectedWeekId, onClose }: ExportModalProps
               checked={excludeBrokers}
               onChange={(e) => setExcludeBrokers(e.target.checked)}
             />
-            Exclude Brokers
+            {t('export.excludeBrokers')}
           </label>
         </div>
 
@@ -164,7 +168,7 @@ export function ExportModal({ weeks, selectedWeekId, onClose }: ExportModalProps
             onClick={onClose}
             style={secondaryBtnStyle}
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="button"
@@ -172,7 +176,7 @@ export function ExportModal({ weeks, selectedWeekId, onClose }: ExportModalProps
             disabled={exporting}
             style={loadingBtnStyle(primaryBtnStyle, exporting)}
           >
-            {exporting ? 'Exporting...' : 'Download CSV'}
+            {exporting ? t('export.exporting') : t('export.downloadCsv')}
           </button>
         </div>
       </div>

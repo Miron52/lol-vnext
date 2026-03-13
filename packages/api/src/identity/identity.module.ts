@@ -6,6 +6,7 @@ import { User } from './entities/user.entity';
 import { AuthService } from './auth.service';
 import { UsersService } from './users.service';
 import { AuthController } from './auth.controller';
+import { UsersController } from './users.controller';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 
@@ -22,7 +23,7 @@ import { RolesGuard } from './guards/roles.guard';
       }),
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, UsersController],
   providers: [AuthService, UsersService, JwtAuthGuard, RolesGuard],
   exports: [AuthService, UsersService, JwtAuthGuard, RolesGuard, JwtModule],
 })

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LoadStatus } from '@lol/shared';
+import { LoadStatus, Role } from '@lol/shared';
 import type { WeekDto, CreateLoadRequest } from '@lol/shared';
 import { useAuth } from '@/lib/auth';
 import { getErrorMessage } from '@/lib/errors';
@@ -54,7 +54,7 @@ export function NewLoadContent() {
             date: defaultWeek.startDate,
             fromDate: defaultWeek.startDate,
             toDate: defaultWeek.startDate,
-            dispatcherId: user!.id,
+            dispatcherId: user!.role === Role.Dispatcher ? user!.id : '',
           }),
         );
       } catch (err: unknown) {

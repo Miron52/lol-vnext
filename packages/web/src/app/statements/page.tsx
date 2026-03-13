@@ -7,6 +7,7 @@ import type { WeekDto, StatementDto, StatementArchiveItem, GenerateStatementRequ
 import { useAuth } from '@/lib/auth';
 import { usePermissions } from '@/lib/permissions';
 import { useMasterData } from '@/lib/use-master-data';
+import { useI18n } from '@/lib/i18n';
 import { apiFetch } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
 import { labelStyle, inputStyle, checkboxLabelStyle, fmt, tabBtnStyle, thStyle, tdStyle, tdRight, tableWrapperStyle, tableStyle, smallBtnStyle, primaryBtnStyle, loadingBtnStyle, accessDeniedStyle, accessDeniedSubtextStyle, badgeStyle, zebraRowProps, thAction, tdAction, colors, spacing } from '@/lib/styles';
@@ -17,11 +18,6 @@ import { StatementPreview } from './StatementPreview';
 
 // ── Types ─────────────────────────────────────────────────────
 type PaymentFilter = 'all' | 'quick_pay' | 'direct';
-const PAYMENT_OPTIONS: { value: PaymentFilter; label: string }[] = [
-  { value: 'all', label: 'All Loads' },
-  { value: 'quick_pay', label: 'Quick Pay Only' },
-  { value: 'direct', label: 'Direct Payment Only' },
-];
 
 type ViewMode = 'form' | 'preview' | 'archive';
 
@@ -29,6 +25,7 @@ export default function StatementsPage() {
   const { user, loading: authLoading, logout } = useAuth();
   const { can: allowed } = usePermissions();
   const router = useRouter();
+  const { t } = useI18n();
 
   // ── State ───────────────────────────────────────────────────
   const [view, setView] = useState<ViewMode>('form');
@@ -138,16 +135,16 @@ export default function StatementsPage() {
   }
 
   // ── Render guards ───────────────────────────────────────────
-  if (authLoading) return <main style={{ padding: '2rem' }}><LoadingBox message="Authenticating..." /></main>;
+  if (authLoading) return <main style={{ padding: '2rem' }}><LoadingBox message={t('common.authenticating')} /></main>;
   if (!user) return null;
 
   if (!allowed(Action.StatementsRead)) {
     return (
-      <PageShell breadcrumb="/ Statements" user={user} onLogout={logout} nav={[{label:'Loads',href:'/loads'},{label:'Home',href:'/'}]}>
+      <PageShell breadcrumb={`/ ${t('stmt.title')}`} user={user} onLogout={logout} nav={[{label:'Loads',href:'/loads'},{label:'Home',href:'/'}]}>
         <div style={accessDeniedStyle}>
-          <strong>Access Denied</strong>
+          <strong>{t('stmt.accessDenied')}</strong>
           <p style={accessDeniedSubtextStyle}>
-            You do not have permission to view statements. Contact an administrator if you need access.
+            {t('stmt.accessDeniedHint')}
           </p>
         </div>
       </PageShell>
@@ -156,17 +153,17 @@ export default function StatementsPage() {
 
   return (
     <PageShell
-      breadcrumb="/ Statements"
+      breadcrumb={`/ ${t('stmt.title')}`}
       user={user}
       onLogout={logout}
       nav={[{label:'Loads',href:'/loads'},{label:'Home',href:'/'}]}
-      title="Statements"
-      subtitle="Generate and manage driver/owner statements"
+      title={t('stmt.title')}
+      subtitle={t('stmt.subtitle')}
     >
       {/* ── Tabs ── */}
       <div style={{ display: 'flex', gap: spacing.md, marginBottom: spacing.xl }}>
-        <button onClick={() => setView('form')} style={tabBtnStyle(view === 'form')}>Generate</button>
-        <button onClick={() => setView('archive')} style={tabBtnStyle(view === 'archive')}>Archive</button>
+        <button onClick={() => setView('form')} style={tabBtnStyle(view === 'form')}>{t('stmt.generate')}</button>
+        <button onClick={() => setView('archive')} style={tabBtnStyle(view === 'archive')}>{t('stmt.archive')}</button>
       </div>
 
       {/* ── Error ── */}
@@ -176,42 +173,44 @@ export default function StatementsPage() {
       {view === 'form' && (
         <div style={{ maxWidth: 500 }}>
           <div style={{ marginBottom: spacing.xl }}>
-            <label style={labelStyle}>Statement Type</label>
+            <label style={labelStyle}>{t('stmt.stmtType')}</label>
             <select style={inputStyle} value={statementType} onChange={(e) => setStatementType(e.target.value as StatementType)}>
-              <option value="driver">Driver</option>
-              <option value="owner">Owner</option>
+              <option value="driver">{t('stmt.driver')}</option>
+              <option value="owner">{t('stmt.owner')}</option>
             </select>
           </div>
           <div style={{ marginBottom: spacing.xl }}>
-            <label style={labelStyle}>Week</label>
+            <label style={labelStyle}>{t('stmt.week')}</label>
             <select style={inputStyle} value={weekId} onChange={(e) => setWeekId(e.target.value)}>
               {weeks.map((w) => (
                 <option key={w.id} value={w.id}>
-                  {w.label} ({w.startDate} — {w.endDate}){w.isCurrent ? ' (current)' : ''}
+                  {w.label} ({w.startDate} — {w.endDate}){w.isCurrent ? ` (${t('common.current')})` : ''}
                 </option>
               ))}
             </select>
           </div>
           <div style={{ marginBottom: spacing.xl }}>
-            <label style={labelStyle}>Payment Filter</label>
+            <label style={labelStyle}>{t('stmt.paymentFilter')}</label>
             <select style={inputStyle} value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value as PaymentFilter)}>
-              {PAYMENT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              <option value="all">{t('stmt.allLoads')}</option>
+              <option value="quick_pay">{t('stmt.quickPayOnly')}</option>
+              <option value="direct">{t('stmt.directPaymentOnly')}</option>
             </select>
           </div>
           <div style={{ marginBottom: spacing.xl }}>
             <label style={checkboxLabelStyle}>
               <input type="checkbox" checked={onlyUnpaid} onChange={(e) => setOnlyUnpaid(e.target.checked)} />
-              Only Unpaid (driver not paid)
+              {t('stmt.onlyUnpaid')}
             </label>
           </div>
           <div style={{ marginBottom: spacing.xxl }}>
             <EntityPicker
-              label="Unit"
+              label={t('stmt.unitLabel')}
               value={unitId}
               onChange={setUnitId}
               items={unitItems}
               loading={unitsLoading}
-              placeholder="Select unit (optional)..."
+              placeholder={t('stmt.unitPlaceholder')}
             />
           </div>
           <button
@@ -219,7 +218,7 @@ export default function StatementsPage() {
             disabled={loading || !weekId}
             style={loadingBtnStyle(primaryBtnStyle, loading)}
           >
-            {loading ? 'Loading...' : 'Preview Statement'}
+            {loading ? 'Loading...' : t('stmt.preview')}
           </button>
         </div>
       )}
@@ -241,12 +240,12 @@ export default function StatementsPage() {
       {view === 'archive' && (
         <>
           {loading ? (
-            <LoadingBox message="Loading archive..." subtitle="Fetching saved statements" />
+            <LoadingBox message={t('stmt.loadingArchive')} subtitle={t('stmt.fetchingSaved')} />
           ) : archive.length === 0 ? (
             <EmptyBox
-              title="No statements generated yet"
-              subtitle="Use the Generate tab to create your first statement."
-              actionLabel="Generate"
+              title={t('stmt.noStatements')}
+              subtitle={t('stmt.noStatementsHint')}
+              actionLabel={t('stmt.generate')}
               onAction={() => setView('form')}
             />
           ) : (
@@ -254,14 +253,14 @@ export default function StatementsPage() {
               <table style={{ ...tableStyle, minWidth: 800 }}>
                 <thead>
                   <tr>
-                    <th style={thStyle}>Type</th>
-                    <th style={thStyle}>Week</th>
-                    <th style={thStyle}>Unit</th>
-                    <th style={thStyle}>Loads</th>
-                    <th style={{ ...thStyle, textAlign: 'right' }}>Gross</th>
-                    <th style={{ ...thStyle, textAlign: 'right' }}>Net Profit</th>
-                    <th style={thStyle}>Generated</th>
-                    <th style={thStyle}>By</th>
+                    <th style={thStyle}>{t('stmt.type')}</th>
+                    <th style={thStyle}>{t('stmt.week')}</th>
+                    <th style={thStyle}>{t('stmt.unitLabel')}</th>
+                    <th style={thStyle}>{t('stmt.loads')}</th>
+                    <th style={{ ...thStyle, textAlign: 'right' }}>{t('stmt.gross')}</th>
+                    <th style={{ ...thStyle, textAlign: 'right' }}>{t('stmt.netProfit')}</th>
+                    <th style={thStyle}>{t('stmt.generated')}</th>
+                    <th style={thStyle}>{t('stmt.by')}</th>
                     <th style={thAction}></th>
                   </tr>
                 </thead>
@@ -289,7 +288,7 @@ export default function StatementsPage() {
                           onClick={(e) => { e.stopPropagation(); handleViewArchived(s.id); }}
                           style={smallBtnStyle}
                         >
-                          View
+                          {t('stmt.view')}
                         </button>
                       </td>
                     </tr>

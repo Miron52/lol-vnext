@@ -2,6 +2,7 @@
 
 import type { LoadDto } from '@lol/shared';
 import { LoadStatus } from '@lol/shared';
+import { useI18n } from '@/lib/i18n';
 import { thStyle, tdStyle, tdRight, smallBtnStyle, tableWrapperStyle, tableStyle, badgeStyle, tagStyle, thAction, tdAction, colors, spacing, zebraRowProps, fmt } from '@/lib/styles';
 
 interface LoadsTableProps {
@@ -11,13 +12,16 @@ interface LoadsTableProps {
   onUnarchive?: (loadId: string) => void;
 }
 
-const STATUS_LABEL: Record<LoadStatus, string> = {
-  [LoadStatus.NotPickedUp]: 'Not Picked Up',
-  [LoadStatus.InTransit]: 'In Transit',
-  [LoadStatus.Delivered]: 'Delivered',
-  [LoadStatus.Completed]: 'Completed',
-  [LoadStatus.Cancelled]: 'Cancelled',
-};
+function getStatusLabel(status: LoadStatus, t: (key: string) => string): string {
+  const labels: Record<LoadStatus, string> = {
+    [LoadStatus.NotPickedUp]: t('status.not_picked_up'),
+    [LoadStatus.InTransit]: t('status.in_transit'),
+    [LoadStatus.Delivered]: t('status.delivered'),
+    [LoadStatus.Completed]: t('status.completed'),
+    [LoadStatus.Cancelled]: t('status.cancelled'),
+  };
+  return labels[status] || status;
+}
 
 const STATUS_BADGE_VARIANT: Record<LoadStatus, 'muted' | 'info' | 'success' | 'danger'> = {
   [LoadStatus.NotPickedUp]: 'muted',
@@ -36,27 +40,28 @@ function FlagCell({ value }: { value: boolean }) {
 }
 
 export function LoadsTable({ loads, onEdit, onArchive, onUnarchive }: LoadsTableProps) {
+  const { t } = useI18n();
   return (
     <div style={tableWrapperStyle}>
-      <table style={{ ...tableStyle, minWidth: 1300 }}>
+      <table style={{ ...tableStyle, minWidth: 1600 }}>
         <thead>
           <tr>
-            <th style={thStyle}>SYL #</th>
-            <th style={thStyle}>Date</th>
-            <th style={thStyle}>Business</th>
-            <th style={thStyle}>From</th>
-            <th style={thStyle}>To</th>
-            <th style={{ ...thStyle, textAlign: 'right' }}>Gross</th>
-            <th style={{ ...thStyle, textAlign: 'right' }}>Driver Cost</th>
-            <th style={{ ...thStyle, textAlign: 'right' }}>Profit</th>
-            <th style={{ ...thStyle, textAlign: 'right' }}>Profit %</th>
-            <th style={{ ...thStyle, textAlign: 'right' }}>OTR</th>
-            <th style={{ ...thStyle, textAlign: 'right' }}>Net Profit</th>
-            <th style={thStyle}>Status</th>
-            <th style={{ ...thStyle, textAlign: 'center' }}>QP</th>
-            <th style={{ ...thStyle, textAlign: 'center' }}>DP</th>
-            <th style={{ ...thStyle, textAlign: 'center' }}>Fact</th>
-            <th style={{ ...thStyle, textAlign: 'center' }}>Paid</th>
+            <th style={thStyle}>{t('table.sylNumber')}</th>
+            <th style={thStyle}>{t('table.date')}</th>
+            <th style={thStyle}>{t('table.business')}</th>
+            <th style={thStyle}>{t('table.from')}</th>
+            <th style={thStyle}>{t('table.to')}</th>
+            <th style={{ ...thStyle, textAlign: 'right' }}>{t('table.gross')}</th>
+            <th style={{ ...thStyle, textAlign: 'right' }}>{t('table.driverCost')}</th>
+            <th style={{ ...thStyle, textAlign: 'right' }}>{t('table.profit')}</th>
+            <th style={{ ...thStyle, textAlign: 'right' }}>{t('table.profitPct')}</th>
+            <th style={{ ...thStyle, textAlign: 'right' }}>{t('table.otr')}</th>
+            <th style={{ ...thStyle, textAlign: 'right' }}>{t('table.netProfit')}</th>
+            <th style={thStyle}>{t('table.status')}</th>
+            <th style={{ ...thStyle, textAlign: 'center' }}>{t('table.qp')}</th>
+            <th style={{ ...thStyle, textAlign: 'center' }}>{t('table.dp')}</th>
+            <th style={{ ...thStyle, textAlign: 'center' }}>{t('table.fact')}</th>
+            <th style={{ ...thStyle, textAlign: 'center' }}>{t('table.paid')}</th>
             <th style={thAction}></th>
           </tr>
         </thead>
@@ -76,7 +81,7 @@ export function LoadsTable({ loads, onEdit, onArchive, onUnarchive }: LoadsTable
                 {load.sylNumber}
                 {isArchived && (
                   <span style={{ marginLeft: 6, display: 'inline-block', verticalAlign: 'middle', ...tagStyle('solidWarning') }}>
-                    ARCHIVED
+                    {t('table.archived')}
                   </span>
                 )}
               </td>
@@ -104,7 +109,7 @@ export function LoadsTable({ loads, onEdit, onArchive, onUnarchive }: LoadsTable
               </td>
               <td style={tdStyle}>
                 <span style={badgeStyle(STATUS_BADGE_VARIANT[load.loadStatus])}>
-                  {STATUS_LABEL[load.loadStatus] || load.loadStatus}
+                  {getStatusLabel(load.loadStatus, t)}
                 </span>
               </td>
               <td style={{ ...tdStyle, textAlign: 'center' }}><FlagCell value={load.quickPayFlag} /></td>
@@ -120,7 +125,7 @@ export function LoadsTable({ loads, onEdit, onArchive, onUnarchive }: LoadsTable
                     }}
                     style={smallBtnStyle}
                   >
-                    {isArchived ? 'View' : 'Edit'}
+                    {isArchived ? t('table.view') : t('table.edit')}
                   </button>
                   {!isArchived && onArchive && (
                     <button
@@ -135,7 +140,7 @@ export function LoadsTable({ loads, onEdit, onArchive, onUnarchive }: LoadsTable
                         color: colors.orange,
                       }}
                     >
-                      Archive
+                      {t('table.archive')}
                     </button>
                   )}
                   {isArchived && onUnarchive && (
@@ -151,7 +156,7 @@ export function LoadsTable({ loads, onEdit, onArchive, onUnarchive }: LoadsTable
                         color: colors.success,
                       }}
                     >
-                      Unarchive
+                      {t('table.unarchive')}
                     </button>
                   )}
                 </div>

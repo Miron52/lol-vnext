@@ -3,6 +3,7 @@
 import { useState, useMemo, type FormEvent } from 'react';
 import { LoadStatus, calcFinanceBreakdown } from '@lol/shared';
 import type { WeekDto } from '@lol/shared';
+import { useI18n } from '@/lib/i18n';
 import { getErrorMessage } from '@/lib/errors';
 import { useMasterData } from '@/lib/use-master-data';
 import { EntityPicker } from '@/components/EntityPicker';
@@ -100,13 +101,15 @@ function validate(data: LoadFormData): string[] {
 }
 
 // ── Status labels ───────────────────────────────────────────
-const STATUS_OPTIONS: { value: LoadStatus; label: string }[] = [
-  { value: LoadStatus.NotPickedUp, label: 'Not Picked Up' },
-  { value: LoadStatus.InTransit, label: 'In Transit' },
-  { value: LoadStatus.Delivered, label: 'Delivered' },
-  { value: LoadStatus.Completed, label: 'Completed' },
-  { value: LoadStatus.Cancelled, label: 'Cancelled' },
-];
+function getStatusOptions(t: (key: string) => string): { value: LoadStatus; label: string }[] {
+  return [
+    { value: LoadStatus.NotPickedUp, label: t('status.not_picked_up') },
+    { value: LoadStatus.InTransit, label: t('status.in_transit') },
+    { value: LoadStatus.Delivered, label: t('status.delivered') },
+    { value: LoadStatus.Completed, label: t('status.completed') },
+    { value: LoadStatus.Cancelled, label: t('status.cancelled') },
+  ];
+}
 
 // ── Props ───────────────────────────────────────────────────
 interface LoadFormProps {
@@ -124,7 +127,7 @@ interface LoadFormProps {
 }
 
 // ── Finance preview (read-only derived values) ──────────────
-function FinancePreview({ grossAmount, driverCostAmount }: { grossAmount: string; driverCostAmount: string }) {
+function FinancePreview({ grossAmount, driverCostAmount, t }: { grossAmount: string; driverCostAmount: string; t: (key: string) => string }) {
   const breakdown = useMemo(() => {
     const gross = parseFloat(grossAmount) || 0;
     const driver = parseFloat(driverCostAmount) || 0;
@@ -144,30 +147,30 @@ function FinancePreview({ grossAmount, driverCostAmount }: { grossAmount: string
         ...cardStyle,
         marginTop: spacing.lg,
         background: colors.primaryLight,
-        borderColor: '${colors.primaryBorder}',
+        borderColor: colors.primaryBorder,
       }}
     >
       <div style={{ fontSize: fontSizes.sm, fontWeight: 600, color: colors.textSecondary, marginBottom: spacing.sm }}>
-        Finance Breakdown (preview)
+        {t('form.financeBreakdown')}
       </div>
       <div style={rowStyle}>
-        <span>Profit</span>
+        <span>{t('table.profit')}</span>
         <span style={{ fontWeight: 600, color: breakdown.profitAmount >= 0 ? colors.success : colors.danger }}>
           {fmtCurrency(breakdown.profitAmount)}
         </span>
       </div>
       <div style={rowStyle}>
-        <span>Profit %</span>
+        <span>{t('table.profitPct')}</span>
         <span style={{ fontWeight: 600, color: breakdown.profitPercent >= 0 ? colors.success : colors.danger }}>
           {breakdown.profitPercent.toFixed(2)}%
         </span>
       </div>
       <div style={rowStyle}>
-        <span>OTR (1.25%)</span>
+        <span>{t('chart.otr')}</span>
         <span style={{ fontWeight: 600 }}>{fmtCurrency(breakdown.otrAmount)}</span>
       </div>
-      <div style={{ ...rowStyle, borderTop: '1px solid ${colors.primaryBorder}', paddingTop: spacing.sm, marginTop: '0.125rem' }}>
-        <span style={{ fontWeight: 600 }}>Net Profit</span>
+      <div style={{ ...rowStyle, borderTop: `1px solid ${colors.primaryBorder}`, paddingTop: spacing.sm, marginTop: '0.125rem' }}>
+        <span style={{ fontWeight: 600 }}>{t('table.netProfit')}</span>
         <span style={{ fontWeight: 600, color: breakdown.netProfitAmount >= 0 ? colors.success : colors.danger }}>
           {fmtCurrency(breakdown.netProfitAmount)}
         </span>
@@ -187,6 +190,7 @@ export function LoadForm({
   readOnly = false,
   onCancel,
 }: LoadFormProps) {
+  const { t } = useI18n();
   const [form, setForm] = useState<LoadFormData>(initialData);
   const [errors, setErrors] = useState<string[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -246,10 +250,10 @@ export function LoadForm({
 
       {/* ── Identity section ── */}
       <div style={sectionStyle}>
-        <h3 style={sectionTitleStyle}>Load Identity</h3>
+        <h3 style={sectionTitleStyle}>{t('form.loadIdentity')}</h3>
         <div style={gridTwo}>
           <div>
-            <label style={labelStyle}>SYL Number *</label>
+            <label style={labelStyle}>{t('form.sylNumber')}</label>
             <input
               style={inputStyle}
               value={form.sylNumber}
@@ -259,7 +263,7 @@ export function LoadForm({
             />
           </div>
           <div>
-            <label style={labelStyle}>Week *</label>
+            <label style={labelStyle}>{t('form.week')}</label>
             <select
               style={inputStyle}
               value={form.weekId}
@@ -277,7 +281,7 @@ export function LoadForm({
         </div>
         <div style={{ ...gridTwo, marginTop: spacing.lg }}>
           <div>
-            <label style={labelStyle}>Load Date *</label>
+            <label style={labelStyle}>{t('form.loadDate')}</label>
             <input
               type="date"
               style={inputStyle}
@@ -286,13 +290,13 @@ export function LoadForm({
             />
           </div>
           <div>
-            <label style={labelStyle}>Status</label>
+            <label style={labelStyle}>{t('form.status')}</label>
             <select
               style={inputStyle}
               value={form.loadStatus}
               onChange={(e) => set('loadStatus', e.target.value)}
             >
-              {STATUS_OPTIONS.map((s) => (
+              {getStatusOptions(t).map((s) => (
                 <option key={s.value} value={s.value}>
                   {s.label}
                 </option>
@@ -304,10 +308,10 @@ export function LoadForm({
 
       {/* ── Business section ── */}
       <div style={sectionStyle}>
-        <h3 style={sectionTitleStyle}>Business</h3>
+        <h3 style={sectionTitleStyle}>{t('form.business')}</h3>
         <div style={gridTwo}>
           <div>
-            <label style={labelStyle}>Business Name *</label>
+            <label style={labelStyle}>{t('form.businessName')}</label>
             <input
               style={inputStyle}
               value={form.businessName}
@@ -315,7 +319,7 @@ export function LoadForm({
             />
           </div>
           <EntityPicker
-            label="Dispatcher"
+            label={t('form.dispatcher')}
             value={form.dispatcherId}
             onChange={(id) => set('dispatcherId', id)}
             items={dispatchers}
@@ -327,7 +331,7 @@ export function LoadForm({
         </div>
         <div style={{ ...gridThree, marginTop: spacing.lg }}>
           <EntityPicker
-            label="Unit"
+            label={t('form.unit')}
             value={form.unitId}
             onChange={(id) => set('unitId', id)}
             items={units}
@@ -336,7 +340,7 @@ export function LoadForm({
             disabled={disabled}
           />
           <EntityPicker
-            label="Driver"
+            label={t('form.driver')}
             value={form.driverId}
             onChange={(id) => set('driverId', id)}
             items={drivers}
@@ -345,7 +349,7 @@ export function LoadForm({
             disabled={disabled}
           />
           <EntityPicker
-            label="Brokerage"
+            label={t('form.brokerage')}
             value={form.brokerageId}
             onChange={(id) => set('brokerageId', id)}
             items={brokerages}
@@ -355,7 +359,7 @@ export function LoadForm({
           />
         </div>
         <div style={{ marginTop: spacing.lg }}>
-          <label style={labelStyle}>Netsuite Ref</label>
+          <label style={labelStyle}>{t('form.netsuiteRef')}</label>
           <input
             style={inputStyle}
             value={form.netsuiteRef}
@@ -366,10 +370,10 @@ export function LoadForm({
 
       {/* ── Route section ── */}
       <div style={sectionStyle}>
-        <h3 style={sectionTitleStyle}>Route</h3>
+        <h3 style={sectionTitleStyle}>{t('form.route')}</h3>
         <div style={gridThree}>
           <div style={{ gridColumn: 'span 2' }}>
-            <label style={labelStyle}>From Address *</label>
+            <label style={labelStyle}>{t('form.fromAddress')}</label>
             <input
               style={inputStyle}
               value={form.fromAddress}
@@ -377,7 +381,7 @@ export function LoadForm({
             />
           </div>
           <div>
-            <label style={labelStyle}>From State *</label>
+            <label style={labelStyle}>{t('form.fromState')}</label>
             <input
               style={inputStyle}
               value={form.fromState}
@@ -388,7 +392,7 @@ export function LoadForm({
           </div>
         </div>
         <div style={{ marginTop: spacing.lg }}>
-          <label style={labelStyle}>From Date *</label>
+          <label style={labelStyle}>{t('form.fromDate')}</label>
           <input
             type="date"
             style={{ ...inputStyle, maxWidth: 200 }}
@@ -398,7 +402,7 @@ export function LoadForm({
         </div>
         <div style={{ ...gridThree, marginTop: spacing.lg }}>
           <div style={{ gridColumn: 'span 2' }}>
-            <label style={labelStyle}>To Address *</label>
+            <label style={labelStyle}>{t('form.toAddress')}</label>
             <input
               style={inputStyle}
               value={form.toAddress}
@@ -406,7 +410,7 @@ export function LoadForm({
             />
           </div>
           <div>
-            <label style={labelStyle}>To State *</label>
+            <label style={labelStyle}>{t('form.toState')}</label>
             <input
               style={inputStyle}
               value={form.toState}
@@ -417,7 +421,7 @@ export function LoadForm({
           </div>
         </div>
         <div style={{ marginTop: spacing.lg }}>
-          <label style={labelStyle}>To Date *</label>
+          <label style={labelStyle}>{t('form.toDate')}</label>
           <input
             type="date"
             style={{ ...inputStyle, maxWidth: 200 }}
@@ -426,7 +430,7 @@ export function LoadForm({
           />
         </div>
         <div style={{ marginTop: spacing.lg }}>
-          <label style={labelStyle}>Miles</label>
+          <label style={labelStyle}>{t('form.miles')}</label>
           <input
             type="number"
             min="0"
@@ -440,10 +444,10 @@ export function LoadForm({
 
       {/* ── Financials section ── */}
       <div style={sectionStyle}>
-        <h3 style={sectionTitleStyle}>Financials</h3>
+        <h3 style={sectionTitleStyle}>{t('form.financials')}</h3>
         <div style={gridTwo}>
           <div>
-            <label style={labelStyle}>Gross Amount *</label>
+            <label style={labelStyle}>{t('form.grossAmount')}</label>
             <input
               type="number"
               min="0"
@@ -454,7 +458,7 @@ export function LoadForm({
             />
           </div>
           <div>
-            <label style={labelStyle}>Driver Cost *</label>
+            <label style={labelStyle}>{t('form.driverCostAmount')}</label>
             <input
               type="number"
               min="0"
@@ -466,32 +470,32 @@ export function LoadForm({
           </div>
         </div>
         <p style={{ margin: `${spacing.md} 0 0`, fontSize: fontSizes.sm, color: colors.textMuted }}>
-          All derived values below are computed by the server. This is a preview only.
+          {t('form.financeNote')}
         </p>
 
         {/* ── Read-only finance breakdown (live preview) ── */}
-        <FinancePreview grossAmount={form.grossAmount} driverCostAmount={form.driverCostAmount} />
+        <FinancePreview grossAmount={form.grossAmount} driverCostAmount={form.driverCostAmount} t={t} />
       </div>
 
       {/* ── Flags section ── */}
       <div style={sectionStyle}>
-        <h3 style={sectionTitleStyle}>Flags</h3>
+        <h3 style={sectionTitleStyle}>{t('form.flags')}</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem' }}>
           {(
             [
-              ['quickPayFlag', 'Quick Pay'],
-              ['directPaymentFlag', 'Direct Payment'],
-              ['factoringFlag', 'Factoring'],
-              ['driverPaidFlag', 'Driver Paid'],
+              ['quickPayFlag', 'form.quickPay'],
+              ['directPaymentFlag', 'form.directPayment'],
+              ['factoringFlag', 'form.factoring'],
+              ['driverPaidFlag', 'form.driverPaid'],
             ] as const
-          ).map(([key, label]) => (
+          ).map(([key, tKey]) => (
             <label key={key} style={checkboxLabelStyle}>
               <input
                 type="checkbox"
                 checked={form[key]}
                 onChange={(e) => set(key, e.target.checked)}
               />
-              {label}
+              {t(tKey)}
             </label>
           ))}
         </div>
@@ -499,12 +503,12 @@ export function LoadForm({
 
       {/* ── Comment ── */}
       <div style={sectionStyle}>
-        <h3 style={sectionTitleStyle}>Notes</h3>
+        <h3 style={sectionTitleStyle}>{t('form.notes')}</h3>
         <textarea
           style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }}
           value={form.comment}
           onChange={(e) => set('comment', e.target.value)}
-          placeholder="Optional comment..."
+          placeholder={t('form.optionalComment')}
         />
       </div>
 
@@ -517,7 +521,7 @@ export function LoadForm({
           onClick={() => (onCancel ? onCancel() : window.history.back())}
           style={secondaryBtnStyle}
         >
-          {readOnly ? 'Back' : 'Cancel'}
+          {readOnly ? t('form.back') : t('form.cancel')}
         </button>
         {!readOnly && (
           <button
@@ -525,7 +529,7 @@ export function LoadForm({
             disabled={submitting}
             style={loadingBtnStyle(primaryBtnStyle, submitting)}
           >
-            {submitting ? 'Saving...' : submitLabel}
+            {submitting ? t('form.saving') : submitLabel}
           </button>
         )}
       </div>

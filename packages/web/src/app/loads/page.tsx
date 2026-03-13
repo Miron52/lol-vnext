@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Action } from '@lol/shared';
 import { useAuth } from '@/lib/auth';
 import { usePermissions } from '@/lib/permissions';
+import { useI18n } from '@/lib/i18n';
 import { useWeeks } from '@/lib/use-weeks';
 import { useLoads } from '@/lib/use-loads';
 import { apiFetch } from '@/lib/api';
@@ -19,6 +20,7 @@ import { LoadDrawerContent } from './LoadDrawerContent';
 import { primaryBtnStyle, navBtnStyle, checkboxLabelStyle, stickyToolbarStyle, toolbarGroupStyle, bannerStyle, colors, fontSizes } from '@/lib/styles';
 
 export default function LoadsPage() {
+  const { t } = useI18n();
   const { user, loading: authLoading, logout } = useAuth();
   const { can: allowed } = usePermissions();
   const router = useRouter();
@@ -88,7 +90,7 @@ export default function LoadsPage() {
   }, [refetch]);
 
   if (authLoading) {
-    return <main style={{ padding: '2rem' }}><LoadingBox message="Authenticating..." /></main>;
+    return <main style={{ padding: '2rem' }}><LoadingBox message={t('common.authenticating')} /></main>;
   }
 
   if (!user) {
@@ -112,7 +114,7 @@ export default function LoadsPage() {
       {/* ── Sticky Toolbar ── */}
       <div style={stickyToolbarStyle}>
         {weeksLoading ? (
-          <span style={{ color: colors.textMuted, fontSize: fontSizes.md }}>Loading weeks...</span>
+          <span style={{ color: colors.textMuted, fontSize: fontSizes.md }}>{t('loads.loadingWeeks')}</span>
         ) : weeksError ? (
           <span style={{ color: colors.danger, fontSize: fontSizes.md }}>
             Week load error: {weeksError}
@@ -129,7 +131,7 @@ export default function LoadsPage() {
                 checked={showArchived}
                 onChange={(e) => setShowArchived(e.target.checked)}
               />
-              Show Archived
+              {t('loads.showArchived')}
             </label>
           )}
           {canViewSalary && (
@@ -137,7 +139,7 @@ export default function LoadsPage() {
               onClick={() => router.push('/salary')}
               style={navBtnStyle}
             >
-              Salary
+              {t('loads.salary')}
             </button>
           )}
           {canViewStatements && (
@@ -145,7 +147,7 @@ export default function LoadsPage() {
               onClick={() => router.push('/statements')}
               style={navBtnStyle}
             >
-              Statements
+              {t('loads.statements')}
             </button>
           )}
           {canExport && (
@@ -153,14 +155,14 @@ export default function LoadsPage() {
               onClick={() => setExportOpen(true)}
               style={navBtnStyle}
             >
-              Export CSV
+              {t('loads.exportCsv')}
             </button>
           )}
           <button
             onClick={openNewLoadDrawer}
             style={primaryBtnStyle}
           >
-            + New Load
+            {t('loads.newLoad')}
           </button>
         </div>
       </div>
@@ -172,10 +174,10 @@ export default function LoadsPage() {
             <strong>{selectedWeek.label}</strong> &mdash; {selectedWeek.startDate} to {selectedWeek.endDate}
           </span>
           <span style={{ fontWeight: 500, fontSize: fontSizes.base }}>
-            {loadsLoading ? 'Loading...' : (
+            {loadsLoading ? t('loads.loading') : (
               showArchived
-                ? `${activeCount} active, ${archivedCount} archived`
-                : `${loads.length} load${loads.length !== 1 ? 's' : ''}`
+                ? `${activeCount} ${t('loads.active')}, ${archivedCount} ${t('loads.archived')}`
+                : `${loads.length} ${loads.length !== 1 ? t('loads.loads') : t('loads.load')}`
             )}
           </span>
         </div>
@@ -188,12 +190,12 @@ export default function LoadsPage() {
       {loadsError ? (
         <ErrorBanner message={loadsError} />
       ) : loadsLoading ? (
-        <LoadingBox message="Loading loads..." subtitle="Fetching data for the selected week" />
+        <LoadingBox message={t('loads.loading')} subtitle={t('loads.fetchingData')} />
       ) : loads.length === 0 ? (
         <EmptyBox
-          title="No loads this week"
-          subtitle="Create a new load or switch to a different week."
-          actionLabel="+ New Load"
+          title={t('loads.noLoads')}
+          subtitle={t('loads.noLoadsHint')}
+          actionLabel={t('loads.newLoad')}
           onAction={openNewLoadDrawer}
         />
       ) : (

@@ -1,7 +1,8 @@
 /**
  * seed-demo.ts — Populate the database with realistic demo data.
  *
- * Creates: 4 dispatchers, 4 weeks, ~24 loads, 1 active salary rule set.
+ * Creates: 1 admin, 1 accountant, 4 dispatchers, 10 drivers, 6 units,
+ *          5 brokerages, 4 weeks, ~40 loads, 1 active salary rule set.
  *
  * Usage:
  *   npx ts-node -r tsconfig-paths/register packages/api/src/database/seed-demo.ts
@@ -15,6 +16,9 @@ import { User } from '../identity/entities/user.entity';
 import { Week } from '../week/entities/week.entity';
 import { Load } from '../load/entities/load.entity';
 import { SalaryRule } from '../salary-rule/entities/salary-rule.entity';
+import { Driver } from '../master-data/entities/driver.entity';
+import { Unit } from '../master-data/entities/unit.entity';
+import { Brokerage } from '../master-data/entities/brokerage.entity';
 import { Role, LoadStatus } from '@lol/shared';
 
 dotenv.config({ path: join(__dirname, '../../../../.env') });
@@ -27,7 +31,7 @@ async function seed() {
     username: process.env.POSTGRES_USER || 'lol',
     password: process.env.POSTGRES_PASSWORD || 'lol_secret',
     database: process.env.POSTGRES_DB || 'lol_vnext',
-    entities: [User, Week, Load, SalaryRule],
+    entities: [User, Week, Load, SalaryRule, Driver, Unit, Brokerage],
     synchronize: false,
   });
 
@@ -38,48 +42,110 @@ async function seed() {
   const weekRepo = ds.getRepository(Week);
   const loadRepo = ds.getRepository(Load);
   const ruleRepo = ds.getRepository(SalaryRule);
+  const driverRepo = ds.getRepository(Driver);
+  const unitRepo = ds.getRepository(Unit);
+  const brokerageRepo = ds.getRepository(Brokerage);
 
-  // ── 1. Admin (skip if exists) ──────────────────────────────────
-  let admin = await userRepo.findOne({ where: { email: 'admin@tlslogistics.us' } });
-  if (!admin) {
-    admin = userRepo.create({
-      email: 'admin@tlslogistics.us',
-      firstName: 'Admin',
-      lastName: 'LOL',
-      passwordHash: await bcrypt.hash('admin123', 10),
-      role: Role.Admin,
-    });
-    admin = await userRepo.save(admin);
-    console.log('✅ Admin created');
-  } else {
-    console.log('ℹ️  Admin already exists');
-  }
-
-  // ── 2. Dispatchers ─────────────────────────────────────────────
-  const dispatcherData = [
-    { email: 'alex.petrov@tlslogistics.us', firstName: 'Alex', lastName: 'Petrov' },
-    { email: 'maria.gonzalez@tlslogistics.us', firstName: 'Maria', lastName: 'Gonzalez' },
-    { email: 'james.chen@tlslogistics.us', firstName: 'James', lastName: 'Chen' },
-    { email: 'anna.kowalski@tlslogistics.us', firstName: 'Anna', lastName: 'Kowalski' },
-  ];
-
-  const dispatchers: User[] = [];
   const hash = await bcrypt.hash('password123', 10);
 
-  for (const d of dispatcherData) {
-    let existing = await userRepo.findOne({ where: { email: d.email } });
+  // ── 1. Users ────────────────────────────────────────────────────
+  const usersData = [
+    { email: 'admin@tlslogistics.us', firstName: 'Admin', lastName: 'LOL', role: Role.Admin },
+    { email: 'accounting@tlslogistics.us', firstName: 'Sarah', lastName: 'Miller', role: Role.Accountant },
+    { email: 'alex.petrov@tlslogistics.us', firstName: 'Alex', lastName: 'Petrov', role: Role.Dispatcher },
+    { email: 'maria.gonzalez@tlslogistics.us', firstName: 'Maria', lastName: 'Gonzalez', role: Role.Dispatcher },
+    { email: 'james.chen@tlslogistics.us', firstName: 'James', lastName: 'Chen', role: Role.Dispatcher },
+    { email: 'anna.kowalski@tlslogistics.us', firstName: 'Anna', lastName: 'Kowalski', role: Role.Dispatcher },
+    { email: 'assistant@tlslogistics.us', firstName: 'Mike', lastName: 'Davis', role: Role.Assistant },
+  ];
+
+  const users: User[] = [];
+  for (const u of usersData) {
+    let existing = await userRepo.findOne({ where: { email: u.email } });
     if (!existing) {
       existing = await userRepo.save(
-        userRepo.create({ ...d, passwordHash: hash, role: Role.Dispatcher }),
+        userRepo.create({ ...u, passwordHash: hash }),
       );
-      console.log(`✅ Dispatcher created: ${d.firstName} ${d.lastName}`);
+      console.log(`✅ User created: ${u.firstName} ${u.lastName} (${u.role})`);
     } else {
-      console.log(`ℹ️  Dispatcher exists: ${d.firstName} ${d.lastName}`);
+      console.log(`ℹ️  User exists: ${u.firstName} ${u.lastName}`);
     }
-    dispatchers.push(existing);
+    users.push(existing);
   }
 
-  // ── 3. Weeks (W10, W11, W12, W13 of 2026) ─────────────────────
+  const admin = users[0];
+  const dispatchers = users.filter((u) => u.role === Role.Dispatcher);
+
+  // ── 2. Drivers ──────────────────────────────────────────────────
+  const driversData = [
+    { firstName: 'Ivan', lastName: 'Sokolov', phone: '(214) 555-0101' },
+    { firstName: 'Dmitry', lastName: 'Volkov', phone: '(312) 555-0202' },
+    { firstName: 'Sergey', lastName: 'Kozlov', phone: '(713) 555-0303' },
+    { firstName: 'Andrey', lastName: 'Morozov', phone: '(404) 555-0404' },
+    { firstName: 'Viktor', lastName: 'Popov', phone: '(305) 555-0505' },
+    { firstName: 'Nikolay', lastName: 'Lebedev', phone: '(206) 555-0606' },
+    { firstName: 'Oleg', lastName: 'Smirnov', phone: '(602) 555-0707' },
+    { firstName: 'Pavel', lastName: 'Kuznetsov', phone: '(816) 555-0808' },
+    { firstName: 'Roman', lastName: 'Fedorov', phone: '(303) 555-0909' },
+    { firstName: 'Maxim', lastName: 'Novikov', phone: '(317) 555-1010' },
+  ];
+
+  const drivers: Driver[] = [];
+  for (const d of driversData) {
+    let existing = await driverRepo.findOne({ where: { firstName: d.firstName, lastName: d.lastName } });
+    if (!existing) {
+      existing = await driverRepo.save(driverRepo.create(d));
+      console.log(`✅ Driver created: ${d.firstName} ${d.lastName}`);
+    } else {
+      console.log(`ℹ️  Driver exists: ${d.firstName} ${d.lastName}`);
+    }
+    drivers.push(existing);
+  }
+
+  // ── 3. Units ────────────────────────────────────────────────────
+  const unitsData = [
+    { unitNumber: 'TLS-101', make: 'Freightliner', vin: '3AKJHHDR5NSLA1001', year: 2024 },
+    { unitNumber: 'TLS-102', make: 'Kenworth', vin: '1XKYD49X46J1002', year: 2023 },
+    { unitNumber: 'TLS-103', make: 'Peterbilt', vin: '2NP2HJ7X97M1003', year: 2025 },
+    { unitNumber: 'TLS-104', make: 'Volvo', vin: '4V4NC9EH5FN1004', year: 2024 },
+    { unitNumber: 'TLS-105', make: 'International', vin: '3HSDJSJR1CN1005', year: 2022 },
+    { unitNumber: 'TLS-106', make: 'Mack', vin: '1M1AN07Y57N1006', year: 2025 },
+  ];
+
+  const units: Unit[] = [];
+  for (const u of unitsData) {
+    let existing = await unitRepo.findOne({ where: { unitNumber: u.unitNumber } });
+    if (!existing) {
+      existing = await unitRepo.save(unitRepo.create(u));
+      console.log(`✅ Unit created: ${u.unitNumber} (${u.make})`);
+    } else {
+      console.log(`ℹ️  Unit exists: ${u.unitNumber}`);
+    }
+    units.push(existing);
+  }
+
+  // ── 4. Brokerages ──────────────────────────────────────────────
+  const brokeragesData = [
+    { name: 'FedEx Freight', mcNumber: 'MC-123456' },
+    { name: 'Swift Transport', mcNumber: 'MC-234567' },
+    { name: 'Werner Logistics', mcNumber: 'MC-345678' },
+    { name: 'JB Hunt', mcNumber: 'MC-456789' },
+    { name: 'XPO Logistics', mcNumber: 'MC-567890' },
+  ];
+
+  const brokerages: Brokerage[] = [];
+  for (const b of brokeragesData) {
+    let existing = await brokerageRepo.findOne({ where: { name: b.name } });
+    if (!existing) {
+      existing = await brokerageRepo.save(brokerageRepo.create(b));
+      console.log(`✅ Brokerage created: ${b.name}`);
+    } else {
+      console.log(`ℹ️  Brokerage exists: ${b.name}`);
+    }
+    brokerages.push(existing);
+  }
+
+  // ── 5. Weeks (W10–W13 of 2026) ────────────────────────────────
   const weekData = [
     { label: 'LS2026-10', isoYear: 2026, isoWeek: 10, startDate: '2026-03-02', endDate: '2026-03-08' },
     { label: 'LS2026-11', isoYear: 2026, isoWeek: 11, startDate: '2026-03-09', endDate: '2026-03-15' },
@@ -99,8 +165,7 @@ async function seed() {
     weeks.push(existing);
   }
 
-  // ── 4. Loads ───────────────────────────────────────────────────
-  // Check if loads already exist for these weeks
+  // ── 6. Loads ───────────────────────────────────────────────────
   const existingLoadCount = await loadRepo.count({
     where: weeks.map((w) => ({ weekId: w.id })),
   });
@@ -117,36 +182,42 @@ async function seed() {
       { from: 'Denver, CO', fromState: 'CO', to: 'Kansas City, MO', toState: 'MO', miles: 600 },
       { from: 'Miami, FL', fromState: 'FL', to: 'Orlando, FL', toState: 'FL', miles: 235 },
       { from: 'Seattle, WA', fromState: 'WA', to: 'Portland, OR', toState: 'OR', miles: 175 },
+      { from: 'San Antonio, TX', fromState: 'TX', to: 'Lubbock, TX', toState: 'TX', miles: 330 },
+      { from: 'Memphis, TN', fromState: 'TN', to: 'Little Rock, AR', toState: 'AR', miles: 135 },
     ];
-
-    const businesses = ['FedEx Freight', 'Swift Transport', 'Werner Logistics', 'JB Hunt', 'XPO Logistics', 'Old Dominion'];
 
     let loadNum = 1;
 
     for (const week of weeks) {
       for (const disp of dispatchers) {
-        // Each dispatcher gets 2–3 loads per week
-        const loadCount = 2 + Math.floor(Math.random() * 2); // 2 or 3
+        const loadCount = 2 + Math.floor(Math.random() * 2);
 
         for (let i = 0; i < loadCount; i++) {
           const route = routes[(loadNum - 1) % routes.length];
-          const business = businesses[(loadNum - 1) % businesses.length];
-          const gross = 2000 + Math.round(Math.random() * 6000); // $2,000 – $8,000
-          const driverCost = Math.round(gross * (0.5 + Math.random() * 0.2)); // 50–70% of gross
+          const brokerage = brokerages[(loadNum - 1) % brokerages.length];
+          const driver = drivers[(loadNum - 1) % drivers.length];
+          const unit = units[(loadNum - 1) % units.length];
+          const gross = 2000 + Math.round(Math.random() * 6000);
+          const driverCost = Math.round(gross * (0.5 + Math.random() * 0.2));
           const profit = gross - driverCost;
           const profitPercent = gross > 0 ? Math.round((profit / gross) * 10000) / 100 : 0;
           const otr = Math.round(gross * 0.0125 * 100) / 100;
           const netProfit = Math.round((profit - otr) * 100) / 100;
 
           const sylNumber = `TLS26-${week.isoWeek}-${String(loadNum).padStart(2, '0')}`;
-          const dateOffset = Math.floor(Math.random() * 5); // Mon–Fri
+          const dateOffset = Math.floor(Math.random() * 5);
           const loadDate = new Date(week.startDate);
           loadDate.setDate(loadDate.getDate() + dateOffset);
           const dateStr = loadDate.toISOString().slice(0, 10);
 
-          const fromDateObj = new Date(dateStr);
           const toDateObj = new Date(dateStr);
-          toDateObj.setDate(toDateObj.getDate() + 1);
+          toDateObj.setDate(toDateObj.getDate() + 1 + Math.floor(Math.random() * 2));
+
+          // Vary payment flags realistically
+          const quickPay = loadNum % 5 === 0;
+          const directPay = loadNum % 7 === 0;
+          const factoring = loadNum % 4 === 0;
+          const driverPaid = loadNum % 3 === 0;
 
           await loadRepo.save(
             loadRepo.create({
@@ -154,7 +225,10 @@ async function seed() {
               weekId: week.id,
               date: dateStr,
               dispatcherId: disp.id,
-              businessName: business,
+              businessName: brokerage.name,
+              brokerageId: brokerage.id,
+              driverId: driver.id,
+              unitId: unit.id,
               fromAddress: route.from,
               fromState: route.fromState,
               fromDate: dateStr,
@@ -170,17 +244,14 @@ async function seed() {
               netProfitAmount: netProfit,
               loadStatus: LoadStatus.Completed,
               auditSource: 'manual',
+              quickPayFlag: quickPay,
+              directPaymentFlag: directPay,
+              factoringFlag: factoring,
+              driverPaidFlag: driverPaid,
               externalSource: null,
               externalLoadKey: null,
-              unitId: null,
-              driverId: null,
-              brokerageId: null,
               netsuiteRef: null,
               comment: null,
-              quickPayFlag: false,
-              directPaymentFlag: false,
-              factoringFlag: false,
-              driverPaidFlag: false,
             }),
           );
           loadNum++;
@@ -190,7 +261,7 @@ async function seed() {
     console.log(`✅ ${loadNum - 1} loads created across ${weeks.length} weeks`);
   }
 
-  // ── 5. Salary Rule Set ─────────────────────────────────────────
+  // ── 7. Salary Rule Set ─────────────────────────────────────────
   const existingRule = await ruleRepo.findOne({ where: { isActive: true } });
   if (!existingRule) {
     await ruleRepo.save(
@@ -207,8 +278,8 @@ async function seed() {
           { tierOrder: 3, minProfit: 10000, maxProfit: 20000, percent: 12 },
           { tierOrder: 4, minProfit: 20000, maxProfit: null, percent: 15 },
         ],
-        createdById: admin!.id,
-        createdByName: `${admin!.firstName} ${admin!.lastName}`,
+        createdById: admin.id,
+        createdByName: `${admin.firstName} ${admin.lastName}`,
       }),
     );
     console.log('✅ Salary rule set created: Standard Tiers 2026');
@@ -217,6 +288,14 @@ async function seed() {
   }
 
   console.log('\n🎉 Demo seed complete!');
+  console.log('\nLogin credentials:');
+  console.log('  Admin:      admin@tlslogistics.us / password123');
+  console.log('  Accountant: accounting@tlslogistics.us / password123');
+  console.log('  Dispatcher: alex.petrov@tlslogistics.us / password123');
+  console.log('              maria.gonzalez@tlslogistics.us / password123');
+  console.log('              james.chen@tlslogistics.us / password123');
+  console.log('              anna.kowalski@tlslogistics.us / password123');
+  console.log('  Assistant:  assistant@tlslogistics.us / password123');
   await ds.destroy();
 }
 

@@ -27,13 +27,16 @@ export interface DashboardAverages {
   avgProfitMargin: number;
 }
 
-/** Top corridor (from_state → to_state) with load count and total gross. */
+/** Top corridor (from_state → to_state) with load count and financials. */
 export interface TopCorridor {
   fromState: string;
   toState: string;
   loadCount: number;
   grossAmount: number;
+  driverCostAmount: number;
   profitAmount: number;
+  otrAmount: number;
+  netProfitAmount: number;
 }
 
 /** Flag usage summary. */

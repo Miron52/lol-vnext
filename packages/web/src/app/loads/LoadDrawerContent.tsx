@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { LoadStatus } from '@lol/shared';
+import { LoadStatus, Role } from '@lol/shared';
 import type { WeekDto, LoadDto, CreateLoadRequest, UpdateLoadRequest } from '@lol/shared';
+import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
@@ -27,6 +28,7 @@ interface LoadDrawerContentProps {
  * Reuses the existing LoadForm and API logic from NewLoadContent / EditLoadPage.
  */
 export function LoadDrawerContent({ loadId, weekId, onSaved, onClose }: LoadDrawerContentProps) {
+  const { t } = useI18n();
   const { user } = useAuth();
   const isEdit = !!loadId;
 
@@ -102,7 +104,10 @@ export function LoadDrawerContent({ loadId, weekId, onSaved, onClose }: LoadDraw
               date: defaultWeek.startDate,
               fromDate: defaultWeek.startDate,
               toDate: defaultWeek.startDate,
-              dispatcherId: user!.id,
+              // Only pre-fill dispatcher if the current user IS a dispatcher;
+              // otherwise leave blank so the EntityPicker shows the placeholder
+              // instead of a raw UUID that doesn't match the picker list.
+              dispatcherId: user!.role === Role.Dispatcher ? user!.id : '',
             }),
           );
         }
@@ -191,16 +196,16 @@ export function LoadDrawerContent({ loadId, weekId, onSaved, onClose }: LoadDraw
 
   // ── Render ──────────────────────────────────────────────
   const drawerTitle = loading
-    ? (isEdit ? 'Loading...' : 'New Load')
+    ? (isEdit ? t('drawer.loading') : t('drawer.newLoad'))
     : isEdit
-      ? (isArchived ? `View Load — ${initialData?.sylNumber || ''}` : `Edit Load — ${initialData?.sylNumber || ''}`)
-      : 'New Load';
+      ? (isArchived ? `${t('drawer.viewLoad')} — ${initialData?.sylNumber || ''}` : `${t('drawer.editLoad')} — ${initialData?.sylNumber || ''}`)
+      : t('drawer.newLoad');
 
   const drawerSubtitle = isArchived
-    ? 'This load is archived and read-only'
+    ? t('drawer.archivedReadOnly')
     : isEdit
-      ? 'Update load details'
-      : 'Create a new load entry';
+      ? t('drawer.updateDetails')
+      : t('drawer.createEntry');
 
   return (
     <>
@@ -208,12 +213,12 @@ export function LoadDrawerContent({ loadId, weekId, onSaved, onClose }: LoadDraw
         title={drawerTitle}
         subtitle={drawerSubtitle}
         onClose={onClose}
-        tag={isArchived ? <span style={tagStyle('solidWarning')}>ARCHIVED</span> : undefined}
+        tag={isArchived ? <span style={tagStyle('solidWarning')}>{t('table.archived')}</span> : undefined}
       />
 
       <DrawerBody>
         {loading ? (
-          <LoadingBox message={isEdit ? 'Loading load...' : 'Preparing form...'} />
+          <LoadingBox message={isEdit ? t('drawer.loading') : t('drawer.preparingForm')} />
         ) : initError ? (
           <ErrorBanner message={initError} />
         ) : initialData ? (
@@ -221,8 +226,7 @@ export function LoadDrawerContent({ loadId, weekId, onSaved, onClose }: LoadDraw
             {isArchived && (
               <div style={{ ...bannerStyle('warning'), justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <span>
-                  This load is archived{archivedAt ? ` (since ${new Date(archivedAt).toLocaleDateString()})` : ''}.
-                  Unarchive it from the Loads list to make changes.
+                  {t('drawer.archivedBanner')}
                 </span>
               </div>
             )}
@@ -230,7 +234,7 @@ export function LoadDrawerContent({ loadId, weekId, onSaved, onClose }: LoadDraw
               initialData={initialData}
               weeks={weeks}
               onSubmit={isEdit ? handleUpdate : handleCreate}
-              submitLabel={isEdit ? 'Save Changes' : 'Create Load'}
+              submitLabel={isEdit ? t('form.update') : t('form.create')}
               title=""
               isEdit={isEdit}
               readOnly={isArchived}

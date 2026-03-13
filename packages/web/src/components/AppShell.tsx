@@ -4,6 +4,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { APP_NAME, Action } from '@lol/shared';
 import type { UserProfile } from '@lol/shared';
 import { usePermissions } from '@/lib/permissions';
+import { useI18n } from '@/lib/i18n';
+import type { Lang } from '@/lib/i18n';
 import {
   sidebarStyle,
   sidebarBrandStyle,
@@ -35,20 +37,21 @@ interface AppShellProps {
 
 /** Sidebar navigation items with permission gating */
 interface NavEntry {
-  label: string;
+  /** Static label used for icon matching */
+  iconKey: string;
+  /** i18n translation key for the label */
+  i18nKey: string;
   href: string;
-  /** If set, this Action must be allowed for the item to show */
   gate?: Action;
-  /** Match these path prefixes for active state */
   match?: string[];
 }
 
 const NAV_ITEMS: NavEntry[] = [
-  { label: 'Dashboard', href: '/dashboard', match: ['/dashboard'] },
-  { label: 'Loads', href: '/loads', match: ['/loads'] },
-  { label: 'Statements', href: '/statements', gate: Action.StatementsRead, match: ['/statements'] },
-  { label: 'Salary', href: '/salary', gate: Action.SalaryPreview, match: ['/salary'] },
-  { label: 'Settings', href: '/settings', gate: Action.SalaryRulesRead, match: ['/settings'] },
+  { iconKey: 'Dashboard', i18nKey: 'nav.dashboard', href: '/dashboard', match: ['/dashboard'] },
+  { iconKey: 'Loads', i18nKey: 'nav.loads', href: '/loads', match: ['/loads'] },
+  { iconKey: 'Statements', i18nKey: 'nav.statements', href: '/statements', gate: Action.StatementsRead, match: ['/statements'] },
+  { iconKey: 'Salary', i18nKey: 'nav.salary', href: '/salary', gate: Action.SalaryPreview, match: ['/salary'] },
+  { iconKey: 'Settings', i18nKey: 'nav.settings', href: '/settings', gate: Action.SalaryRulesRead, match: ['/settings'] },
 ];
 
 /** SVG icons for sidebar nav items — minimal, 18x18 stroke icons */
@@ -113,6 +116,7 @@ export function AppShell({
   const router = useRouter();
   const pathname = usePathname();
   const { can: allowed } = usePermissions();
+  const { t, lang, setLang } = useI18n();
 
   const isActive = (item: NavEntry) =>
     item.match?.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/')) ?? false;
@@ -127,7 +131,7 @@ export function AppShell({
             {APP_NAME}
           </div>
           <div style={{ fontSize: fontSizes.xs, color: colors.textOnDarkMuted, marginTop: spacing.xs }}>
-            Transportation Management
+            {t('nav.subtitle')}
           </div>
         </div>
 
@@ -149,8 +153,8 @@ export function AppShell({
                   if (!active) e.currentTarget.style.background = 'transparent';
                 }}
               >
-                <NavIcon label={item.label} />
-                {item.label}
+                <NavIcon label={item.iconKey} />
+                {t(item.i18nKey)}
               </button>
             );
           })}
@@ -182,7 +186,7 @@ export function AppShell({
             onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = colors.textOnDarkMuted; }}
           >
-            Sign Out
+            {t('nav.signOut')}
           </button>
         </div>
       </aside>
@@ -196,6 +200,26 @@ export function AppShell({
             {subtitle && <p style={{ ...pageSubtitleStyle, margin: `2px 0 0` }}>{subtitle}</p>}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+            {/* Language toggle */}
+            <div style={{
+              display: 'flex', border: `1px solid ${colors.borderSubtle}`, borderRadius: 6, overflow: 'hidden',
+            }}>
+              {(['en', 'ru'] as Lang[]).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLang(l)}
+                  style={{
+                    padding: '4px 10px', border: 'none', cursor: 'pointer', fontFamily,
+                    fontSize: fontSizes.xs, fontWeight: lang === l ? 600 : 400,
+                    background: lang === l ? colors.primary : colors.bgWhite,
+                    color: lang === l ? '#fff' : colors.textMuted,
+                    transition: 'all 0.12s ease',
+                  }}
+                >
+                  {l === 'en' ? 'EN' : 'RU'}
+                </button>
+              ))}
+            </div>
             <span style={{ fontSize: fontSizes.sm, color: colors.textMuted }}>
               {user.firstName} {user.lastName}
             </span>

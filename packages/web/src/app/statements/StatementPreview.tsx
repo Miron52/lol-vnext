@@ -1,6 +1,7 @@
 'use client';
 
 import type { StatementDto } from '@lol/shared';
+import { useI18n } from '@/lib/i18n';
 import { thStyle, tdStyle, tdRight, tableWrapperStyle, tableStyle, primaryBtnStyle, secondaryBtnStyle, loadingBtnStyle, bannerStyle, tagStyle, cardStyle, colors, fontSizes, spacing, zebraRowProps, formActionsStyle, fmt as fmtMoney } from '@/lib/styles';
 
 interface PreviewProps {
@@ -19,6 +20,7 @@ function FlagCell({ value }: { value: boolean }) {
 }
 
 export function StatementPreview({ statement, onSave, onClose, saving }: PreviewProps) {
+  const { t } = useI18n();
   const { snapshot } = statement;
   const isSaved = !!statement.id;
 
@@ -28,10 +30,10 @@ export function StatementPreview({ statement, onSave, onClose, saving }: Preview
       {isSaved && (
         <div style={bannerStyle('info')}>
           <span style={tagStyle('solidInfo')}>
-            SNAPSHOT
+            {t('stmt.snapshot')}
           </span>
           <span>
-            This statement is a read-only snapshot generated on {new Date(statement.generatedAt).toLocaleString()}.
+            {t('stmt.snapshotNote')} {new Date(statement.generatedAt).toLocaleString()}.
           </span>
         </div>
       )}
@@ -49,7 +51,7 @@ export function StatementPreview({ statement, onSave, onClose, saving }: Preview
       >
         <div>
           <span style={{ fontWeight: 600, fontSize: fontSizes.lg }}>
-            {statement.statementType === 'driver' ? 'Driver' : 'Owner'} Statement
+            {statement.statementType === 'driver' ? t('stmt.driverStatement') : t('stmt.ownerStatement')}
           </span>
           <span style={{ color: colors.textMuted, fontSize: fontSizes.base, marginLeft: spacing.md }}>
             {statement.weekLabel}
@@ -92,27 +94,27 @@ export function StatementPreview({ statement, onSave, onClose, saving }: Preview
       {/* Loads table */}
       {snapshot.loads.length === 0 ? (
         <div style={{ padding: '2rem', textAlign: 'center', color: colors.textMuted }}>
-          No loads match the selected filters.
+          {t('stmt.noLoadsMatch')}
         </div>
       ) : (
         <div style={{ ...tableWrapperStyle, marginBottom: spacing.xl }}>
           <table style={{ ...tableStyle, minWidth: 900 }}>
             <thead>
               <tr>
-                <th style={thStyle}>SYL #</th>
-                <th style={thStyle}>Date</th>
-                <th style={thStyle}>From</th>
-                <th style={thStyle}>To</th>
+                <th style={thStyle}>{t('table.sylNumber')}</th>
+                <th style={thStyle}>{t('table.date')}</th>
+                <th style={thStyle}>{t('table.from')}</th>
+                <th style={thStyle}>{t('table.to')}</th>
                 <th style={{ ...thStyle, textAlign: 'right' }}>Miles</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Gross</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Driver</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Profit</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>OTR</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Net Profit</th>
-                <th style={{ ...thStyle, textAlign: 'center' }}>QP</th>
-                <th style={{ ...thStyle, textAlign: 'center' }}>DP</th>
-                <th style={{ ...thStyle, textAlign: 'center' }}>Fact</th>
-                <th style={{ ...thStyle, textAlign: 'center' }}>Paid</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t('table.gross')}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t('table.driverCost')}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t('table.profit')}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t('table.otr')}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t('table.netProfit')}</th>
+                <th style={{ ...thStyle, textAlign: 'center' }}>{t('table.qp')}</th>
+                <th style={{ ...thStyle, textAlign: 'center' }}>{t('table.dp')}</th>
+                <th style={{ ...thStyle, textAlign: 'center' }}>{t('table.fact')}</th>
+                <th style={{ ...thStyle, textAlign: 'center' }}>{t('table.paid')}</th>
               </tr>
             </thead>
             <tbody>
@@ -149,7 +151,7 @@ export function StatementPreview({ statement, onSave, onClose, saving }: Preview
           onClick={onClose}
           style={secondaryBtnStyle}
         >
-          {isSaved ? 'Back to Archive' : 'Back'}
+          {t('form.back')}
         </button>
         {snapshot.loads.length > 0 && !isSaved && (
           <button
@@ -158,7 +160,7 @@ export function StatementPreview({ statement, onSave, onClose, saving }: Preview
             disabled={saving}
             style={loadingBtnStyle(primaryBtnStyle, saving)}
           >
-            {saving ? 'Saving...' : 'Save Statement'}
+            {saving ? 'Saving...' : t('stmt.preview')}
           </button>
         )}
       </div>

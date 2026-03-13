@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import type { WeeklyAggregation, StatusBreakdown, TopCorridor } from '@lol/shared';
-import { cardStyle, fontSizes, spacing, colors, fontFamily, radii, shadows } from '@/lib/styles';
+import type { WeeklyAggregation, TopCorridor } from '@lol/shared';
+import { cardStyle, fontSizes, spacing, colors, fontFamily, radii } from '@/lib/styles';
+import { useI18n } from '@/lib/i18n';
 
 /* ─────────────────────────── helpers ────────────────────────── */
 
@@ -16,390 +17,493 @@ function formatCompact(value: number): string {
   return '$' + value.toFixed(0);
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  not_picked_up: 'Not Picked Up',
-  in_transit: 'In Transit',
-  delivered: 'Delivered',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-};
+function formatDateRange(start: string, end: string): string {
+  const fmt = (d: string) => {
+    const parts = d.split('-').map(Number);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[parts[1] - 1]} ${parts[2]}`;
+  };
+  return `${fmt(start)} – ${fmt(end)}`;
+}
 
-const STATUS_COLORS: Record<string, string> = {
-  not_picked_up: '#94a3b8',
-  in_transit: '#f59e0b',
-  delivered: '#3b82f6',
-  completed: '#16a34a',
-  cancelled: '#dc2626',
-};
+function shortWeekLabel(label: string): string {
+  const m = label.match(/(\d+)$/);
+  return m ? `W${m[1]}` : label;
+}
 
-/* ─────────── HR Portal-style card with left accent border ───── */
+function shouldRotateLabels(count: number): boolean {
+  return count > 10;
+}
 
-const accentCardStyle = (accentColor: string): React.CSSProperties => ({
-  ...cardStyle,
-  borderLeft: `4px solid ${accentColor}`,
-  borderLeftColor: accentColor,
-});
+/* ───────── Metric configuration & colors ───────────────────── */
 
-/* ────────────── Ring / Donut progress indicator ─────────────── */
+export const METRIC_COLORS = {
+  gross: '#3b82f6',
+  driverCost: '#f97316',
+  profit: '#8b5cf6',
+  otr: '#0d9488',
+  netProfit: '#16a34a',
+  loads: '#2563eb',
+} as const;
 
-function RingProgress({
-  value,
-  total,
-  color,
-  size = 64,
-  strokeWidth = 6,
-}: {
-  value: number;
-  total: number;
+export type MetricKey = 'gross' | 'driver' | 'profit' | 'otr' | 'net';
+
+interface MetricDef {
+  key: MetricKey;
+  i18nKey: string;
   color: string;
-  size?: number;
-  strokeWidth?: number;
-}) {
-  const pct = total > 0 ? Math.min(value / total, 1) : 0;
-  const r = (size - strokeWidth) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - pct);
+}
 
+const ALL_METRICS: MetricDef[] = [
+  { key: 'gross', i18nKey: 'col.gross', color: METRIC_COLORS.gross },
+  { key: 'driver', i18nKey: 'col.driver', color: METRIC_COLORS.driverCost },
+  { key: 'profit', i18nKey: 'col.profit', color: METRIC_COLORS.profit },
+  { key: 'otr', i18nKey: 'col.otr', color: METRIC_COLORS.otr },
+  { key: 'net', i18nKey: 'col.net', color: METRIC_COLORS.netProfit },
+];
+
+const DEFAULT_VISIBLE: MetricKey[] = ['gross', 'driver', 'net'];
+
+/* ═══════════════════════════════════════════════════════════════
+   CHART INFRASTRUCTURE
+   ═══════════════════════════════════════════════════════════════ */
+
+function ChartCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <div style={{ ...cardStyle, position: 'relative', ...style }}>{children}</div>;
+}
+
+function ChartHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={colors.borderSubtle} strokeWidth={strokeWidth} />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeDasharray={`${circ}`}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-      />
-      <text
-        x={size / 2}
-        y={size / 2 + 1}
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontSize={size > 50 ? 13 : 10}
-        fontWeight={700}
-        fill={color}
-        fontFamily={fontFamily}
-      >
-        {(pct * 100).toFixed(0)}%
-      </text>
-    </svg>
+    <div style={{ marginBottom: 16 }}>
+      <h3 style={{ margin: 0, fontSize: fontSizes.md, fontWeight: 600, color: colors.text, letterSpacing: '-0.01em' }}>
+        {title}
+      </h3>
+      {subtitle && (
+        <p style={{ margin: '2px 0 0', fontSize: fontSizes.xs, color: colors.textMuted, fontWeight: 400 }}>
+          {subtitle}
+        </p>
+      )}
+    </div>
   );
 }
 
-/* ───────── Status distribution with ring indicators ─────────── */
-
-export function StatusStatsCards({
-  breakdown,
-  totalLoads,
-  prevBreakdown,
-  prevTotal,
-}: {
-  breakdown: StatusBreakdown[];
-  totalLoads: number;
-  prevBreakdown?: StatusBreakdown[];
-  prevTotal?: number;
-}) {
-  if (breakdown.length === 0) return null;
-
-  // Build prev map for "% change" labels
-  const prevMap = new Map<string, number>();
-  if (prevBreakdown) {
-    for (const b of prevBreakdown) prevMap.set(b.status, b.count);
-  }
-
+function Legend({ items }: { items: { label: string; color: string }[] }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: spacing.lg }}>
-      {breakdown.map((item) => {
-        const color = STATUS_COLORS[item.status] || '#94a3b8';
-        const prevCount = prevMap.get(item.status) ?? 0;
-        const pctChange = prevCount > 0 ? Math.round(((item.count - prevCount) / prevCount) * 100) : (item.count > 0 ? 100 : 0);
-        const changeLabel = pctChange > 0 ? `${pctChange}% more than prev period` : pctChange < 0 ? `${Math.abs(pctChange)}% less than prev period` : '';
+    <div style={{ display: 'flex', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
+      {items.map((item) => (
+        <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: colors.textSecondary, fontWeight: 500 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 2, background: item.color, display: 'inline-block', flexShrink: 0 }} />
+          {item.label}
+        </div>
+      ))}
+    </div>
+  );
+}
 
+function ChartTooltip({ visible, left, top, children }: { visible: boolean; left: number; top: number; children: React.ReactNode }) {
+  if (!visible) return null;
+  return (
+    <div style={{
+      position: 'absolute', left, top, transform: 'translateX(-50%)',
+      background: colors.bgWhite, border: `1px solid ${colors.border}`, borderRadius: radii.md,
+      boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '8px 12px', zIndex: 10,
+      minWidth: 200, pointerEvents: 'none', fontFamily,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function TooltipRow({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1px 0', fontSize: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        <span style={{ width: 6, height: 6, borderRadius: 1, background: color, flexShrink: 0 }} />
+        <span style={{ color: colors.textSecondary }}>{label}</span>
+      </div>
+      <span style={{ fontWeight: 600, color: colors.text, fontVariantNumeric: 'tabular-nums', marginLeft: 16 }}>{value}</span>
+    </div>
+  );
+}
+
+function YGrid({ steps, chartHeight, padLeft, padRight, chartWidth, labelFn }: {
+  steps: number[]; chartHeight: number; padLeft: number; padRight: number; chartWidth: number;
+  labelFn: (frac: number) => string;
+}) {
+  return (
+    <>
+      {steps.map((frac) => {
+        const y = chartHeight - frac * chartHeight;
         return (
-          <div key={item.status} style={accentCardStyle(color)}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: fontSizes.sm, color: colors.textMuted, fontWeight: 500, marginBottom: 4 }}>
-                  {STATUS_LABELS[item.status] || item.status}
-                </div>
-                <div style={{ fontSize: fontSizes.xxl, fontWeight: 700, color: colors.text }}>
-                  {item.count}
-                </div>
-                {changeLabel && (
-                  <div style={{ fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 4 }}>
-                    {changeLabel}
-                  </div>
-                )}
-              </div>
-              <RingProgress value={item.count} total={totalLoads} color={color} />
-            </div>
-          </div>
+          <g key={frac}>
+            <line x1={padLeft} y1={y} x2={chartWidth - padRight} y2={y}
+              stroke={frac === 0 ? colors.border : '#eef2f6'} strokeWidth={1}
+              strokeDasharray={frac > 0 ? '4,3' : 'none'} />
+            <text x={padLeft - 8} y={y + 3} textAnchor="end" fontSize={10} fill={colors.textMuted} fontFamily={fontFamily}>
+              {labelFn(frac)}
+            </text>
+          </g>
+        );
+      })}
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Column Toggle Panel
+   ═══════════════════════════════════════════════════════════════ */
+
+function ColumnToggle({
+  metrics,
+  visible,
+  onToggle,
+}: {
+  metrics: MetricDef[];
+  visible: MetricKey[];
+  onToggle: (key: MetricKey) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+      <span style={{ fontSize: 11, color: colors.textMuted, fontWeight: 500, alignSelf: 'center', marginRight: 4 }}>
+        {t('chart.columns')}:
+      </span>
+      {metrics.map((m) => {
+        const active = visible.includes(m.key);
+        return (
+          <button
+            key={m.key}
+            onClick={() => onToggle(m.key)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '3px 10px', border: `1px solid ${active ? m.color : colors.borderSubtle}`,
+              borderRadius: radii.md, background: active ? `${m.color}10` : colors.bgWhite,
+              cursor: 'pointer', fontSize: 11, fontWeight: 500,
+              color: active ? m.color : colors.textMuted,
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <span style={{
+              width: 8, height: 8, borderRadius: 2,
+              background: active ? m.color : colors.borderSubtle,
+            }} />
+            {t(m.i18nKey)}
+          </button>
         );
       })}
     </div>
   );
 }
 
-/* ────────── Profit Statistics — 5-series bar chart with tooltip ── */
+/* ═══════════════════════════════════════════════════════════════
+   MAIN CHART — Revenue, Cost & Net Profit (configurable columns)
+   ═══════════════════════════════════════════════════════════════ */
 
-interface TooltipData {
-  weekLabel: string;
-  netProfit: number;
-  otr: number;
-  driverProfit: number;
-  pctProfit: number;
-  loadCount: number;
-  x: number;
-  y: number;
-}
-
-const SERIES_CONFIG = [
-  { key: 'netProfit', label: 'Net Profit', color: '#c4b5fd' },      // purple-light
-  { key: 'otr', label: 'OTR (1.25%)', color: '#6ee7b7' },          // green-light
-  { key: 'driverProfit', label: 'Driver Profit', color: '#93c5fd' }, // blue-light
-  { key: 'pctProfit', label: 'Percentage Profit', color: '#fdba74' }, // orange-light
-  { key: 'loadCount', label: 'LOL Count', color: '#fca5a5' },       // red-light
-] as const;
-
-export function ProfitStatsChart({ weeks }: { weeks: WeeklyAggregation[] }) {
-  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+export function RevenueCostChart({ weeks }: { weeks: WeeklyAggregation[] }) {
+  const { t } = useI18n();
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const [visibleMetrics, setVisibleMetrics] = useState<MetricKey[]>(DEFAULT_VISIBLE);
 
   if (weeks.length === 0) return null;
 
-  // Build per-week data
-  const weekData = weeks.map((w) => ({
-    weekLabel: w.weekLabel,
-    netProfit: w.netProfitAmount,
+  const toggleMetric = (key: MetricKey) => {
+    setVisibleMetrics((prev) =>
+      prev.includes(key) ? (prev.length > 1 ? prev.filter((k) => k !== key) : prev) : [...prev, key],
+    );
+  };
+
+  const activeSeries = ALL_METRICS.filter((m) => visibleMetrics.includes(m.key));
+
+  const data = weeks.map((w) => ({
+    label: w.weekLabel,
+    startDate: w.startDate,
+    endDate: w.endDate,
+    gross: w.grossAmount,
+    driver: w.driverCostAmount,
+    profit: w.profitAmount,
     otr: w.otrAmount,
-    driverProfit: w.driverCostAmount,
-    pctProfit: w.grossAmount > 0 ? Math.round((w.profitAmount / w.grossAmount) * 10000) / 100 : 0,
+    net: w.netProfitAmount,
     loadCount: w.loadCount,
+    margin: w.grossAmount > 0 ? Math.round((w.profitAmount / w.grossAmount) * 10000) / 100 : 0,
   }));
 
-  // Main bar is driverProfit (largest value) — all bars scale to this max
-  const allVals = weekData.flatMap((d) => [d.netProfit, d.otr, d.driverProfit]);
-  const maxVal = Math.max(...allVals, 1);
+  const maxVal = Math.max(
+    ...data.flatMap((d) => activeSeries.map((s) => Math.abs(d[s.key]))),
+    1,
+  );
+  const rotate = shouldRotateLabels(weeks.length);
 
-  const chartHeight = 260;
-  const barGroupWidth = Math.max(50, Math.min(80, 700 / weeks.length));
-  const padLeft = 60;
-  const padRight = 16;
-  const chartWidth = Math.max(440, weeks.length * barGroupWidth + padLeft + padRight);
-
-  // Main bar (tallest) — driverProfit in light blue, overlaid with netProfit + otr
-  // This matches the screenshot where Driver Profit is the tall bar with values on top
+  const chartH = 260;
+  const barW = Math.max(10, Math.min(22, 400 / (weeks.length * activeSeries.length)));
+  const barGap = 2;
+  const groupInner = activeSeries.length * barW + (activeSeries.length - 1) * barGap;
+  const groupPad = Math.max(8, Math.min(28, 600 / weeks.length));
+  const groupW = groupInner + groupPad;
+  const padL = 62;
+  const padR = 16;
+  const padBottom = rotate ? 52 : 36;
+  const svgW = Math.max(480, weeks.length * groupW + padL + padR);
 
   return (
-    <div style={{ ...cardStyle, flex: 1, minWidth: 400, position: 'relative' }}>
-      <h3 style={{ margin: `0 0 ${spacing.lg}`, fontSize: fontSizes.lg, fontWeight: 600, color: colors.text }}>
-        Profit Statistics
-      </h3>
-
-      {/* Legend */}
-      <div style={{ display: 'flex', gap: spacing.lg, marginBottom: spacing.lg, flexWrap: 'wrap' }}>
-        {SERIES_CONFIG.map((s) => (
-          <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: fontSizes.sm, color: colors.textSecondary }}>
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: s.color, display: 'inline-block' }} />
-            {s.label}
-          </div>
-        ))}
-      </div>
+    <ChartCard>
+      <ChartHeader title={t('chart.revenueCostNet')} subtitle={t('chart.weeklyOverview')} />
+      <ColumnToggle metrics={ALL_METRICS} visible={visibleMetrics} onToggle={toggleMetric} />
+      <Legend items={activeSeries.map((s) => ({ label: t(s.i18nKey), color: s.color }))} />
 
       <div style={{ overflowX: 'auto', position: 'relative' }}>
-        <svg
-          width={chartWidth}
-          height={chartHeight + 50}
-          viewBox={`0 0 ${chartWidth} ${chartHeight + 50}`}
-          style={{ fontFamily, display: 'block' }}
-          onMouseLeave={() => setTooltip(null)}
-        >
-          {/* Y-axis gridlines */}
-          {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
-            const y = chartHeight - frac * chartHeight;
+        <svg width={svgW} height={chartH + padBottom} viewBox={`0 0 ${svgW} ${chartH + padBottom}`}
+          style={{ fontFamily, display: 'block' }} onMouseLeave={() => setHoverIdx(null)}>
+          <YGrid steps={[0, 0.25, 0.5, 0.75, 1]} chartHeight={chartH} padLeft={padL} padRight={padR}
+            chartWidth={svgW} labelFn={(f) => formatCompact(maxVal * f)} />
+
+          {data.map((d, i) => {
+            const gx = padL + groupPad / 2 + i * groupW;
+            const hovered = hoverIdx === i;
             return (
-              <g key={frac}>
-                <line x1={padLeft} y1={y} x2={chartWidth - padRight} y2={y} stroke={colors.borderSubtle} strokeWidth={1} />
-                <text x={padLeft - 8} y={y + 4} textAnchor="end" fontSize={10} fill={colors.textMuted}>
-                  {formatCompact(maxVal * frac)}
+              <g key={d.label} style={{ cursor: 'pointer' }} onMouseEnter={() => setHoverIdx(i)}>
+                <rect x={gx - 6} y={0} width={groupInner + 12} height={chartH}
+                  fill={hovered ? 'rgba(15,23,42,0.03)' : 'transparent'} rx={4} />
+
+                {activeSeries.map((s, si) => {
+                  const val = d[s.key];
+                  const h = Math.max(0, (Math.abs(val) / maxVal) * chartH);
+                  const bx = gx + si * (barW + barGap);
+                  return (
+                    <g key={s.key}>
+                      <rect x={bx} y={chartH - h} width={barW} height={h} fill={s.color} rx={3}
+                        opacity={hovered ? 1 : 0.85} />
+                      {hovered && h > 16 && (
+                        <text x={bx + barW / 2} y={chartH - h + 12} textAnchor="middle" fontSize={8}
+                          fontWeight={600} fill="#fff" fontFamily={fontFamily}>
+                          {formatCompact(val)}
+                        </text>
+                      )}
+                    </g>
+                  );
+                })}
+
+                <text x={gx + groupInner / 2} y={chartH + (rotate ? 10 : 14)}
+                  textAnchor={rotate ? 'end' : 'middle'} fontSize={rotate ? 9 : 10}
+                  fill={hovered ? colors.text : colors.textMuted} fontWeight={hovered ? 600 : 400}
+                  fontFamily={fontFamily}
+                  transform={rotate ? `rotate(-45, ${gx + groupInner / 2}, ${chartH + 10})` : undefined}>
+                  {rotate ? shortWeekLabel(d.label) : d.label}
                 </text>
               </g>
             );
           })}
-
-          {/* Bars per week */}
-          {weekData.map((d, i) => {
-            const groupX = padLeft + 8 + i * barGroupWidth;
-            const bw = barGroupWidth - 16;
-
-            const driverH = Math.max(0, (d.driverProfit / maxVal) * chartHeight);
-            const netH = Math.max(0, (d.netProfit / maxVal) * chartHeight);
-            const otrH = Math.max(0, (d.otr / maxVal) * chartHeight);
-
-            const isHovered = tooltip?.weekLabel === d.weekLabel;
-
-            return (
-              <g
-                key={d.weekLabel}
-                style={{ cursor: 'pointer' }}
-                onMouseEnter={(e) => {
-                  const rect = (e.currentTarget.ownerSVGElement as SVGSVGElement).getBoundingClientRect();
-                  setTooltip({
-                    ...d,
-                    x: groupX + bw / 2,
-                    y: chartHeight - driverH - 10,
-                  });
-                }}
-              >
-                {/* Hover background */}
-                <rect
-                  x={groupX - 4}
-                  y={0}
-                  width={bw + 8}
-                  height={chartHeight}
-                  fill={isHovered ? 'rgba(15,23,42,0.03)' : 'transparent'}
-                  rx={4}
-                />
-
-                {/* Driver Profit — tallest bar */}
-                <rect x={groupX} y={chartHeight - driverH} width={bw} height={driverH} fill="#93c5fd" rx={4} />
-
-                {/* Net Profit — overlaid from bottom */}
-                <rect x={groupX} y={chartHeight - netH} width={bw} height={netH} fill="#c4b5fd" rx={4} opacity={0.7} />
-
-                {/* OTR — small slice on top of net profit */}
-                <rect x={groupX} y={chartHeight - netH - otrH} width={bw} height={otrH} fill="#6ee7b7" rx={2} opacity={0.8} />
-
-                {/* Value label on top of bar */}
-                <text
-                  x={groupX + bw / 2}
-                  y={chartHeight - driverH - 6}
-                  textAnchor="middle"
-                  fontSize={10}
-                  fontWeight={600}
-                  fill={colors.textSecondary}
-                >
-                  {formatCompact(d.driverProfit)}
-                </text>
-
-                {/* X-axis label */}
-                <text x={groupX + bw / 2} y={chartHeight + 16} textAnchor="middle" fontSize={10} fill={colors.textSecondary}>
-                  {d.weekLabel}
-                </text>
-              </g>
-            );
-          })}
-
-          <line x1={padLeft} y1={chartHeight} x2={chartWidth - padRight} y2={chartHeight} stroke={colors.border} strokeWidth={1} />
         </svg>
 
-        {/* Floating tooltip */}
-        {tooltip && (
-          <div
-            style={{
-              position: 'absolute',
-              left: tooltip.x,
-              top: Math.max(tooltip.y - 20, 10),
-              transform: 'translateX(-50%)',
-              background: colors.bgWhite,
-              border: `1px solid ${colors.border}`,
-              borderRadius: radii.lg,
-              boxShadow: shadows.modal,
-              padding: '12px 16px',
-              zIndex: 10,
-              minWidth: 220,
-              pointerEvents: 'none',
-              fontFamily,
-            }}
-          >
-            <div style={{ fontWeight: 700, fontSize: fontSizes.md, color: colors.text, marginBottom: 8, borderBottom: `1px solid ${colors.borderSubtle}`, paddingBottom: 6 }}>
-              {tooltip.weekLabel}
-            </div>
-            {SERIES_CONFIG.map((s) => {
-              const val = tooltip[s.key as keyof TooltipData] as number;
-              const formatted = s.key === 'pctProfit'
-                ? val.toFixed(2)
-                : s.key === 'loadCount'
-                  ? String(val)
-                  : formatCurrency(val);
-              return (
-                <div key={s.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', fontSize: fontSizes.sm }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
-                    <span style={{ color: colors.textSecondary }}>{s.label}</span>
-                  </div>
-                  <span style={{ fontWeight: 600, color: colors.text, fontVariantNumeric: 'tabular-nums' }}>{formatted}</span>
+        <ChartTooltip visible={hoverIdx !== null}
+          left={padL + groupPad / 2 + (hoverIdx ?? 0) * groupW + groupInner / 2} top={8}>
+          {hoverIdx !== null && data[hoverIdx] && (() => {
+            const d = data[hoverIdx];
+            return (
+              <>
+                <div style={{ fontWeight: 600, fontSize: 12, color: colors.text, marginBottom: 2 }}>{d.label}</div>
+                <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 6, paddingBottom: 4,
+                  borderBottom: `1px solid ${colors.borderSubtle}` }}>
+                  {formatDateRange(d.startDate, d.endDate)} &middot; {d.loadCount} {t(d.loadCount !== 1 ? 'loads.loads' : 'loads.load')}
                 </div>
-              );
-            })}
-          </div>
-        )}
+                <TooltipRow label={t('col.gross')} value={formatCurrency(d.gross)} color={METRIC_COLORS.gross} />
+                <TooltipRow label={t('col.driver')} value={formatCurrency(d.driver)} color={METRIC_COLORS.driverCost} />
+                <TooltipRow label={t('col.profit')} value={formatCurrency(d.profit)} color={METRIC_COLORS.profit} />
+                <TooltipRow label={t('col.otr')} value={formatCurrency(d.otr)} color={METRIC_COLORS.otr} />
+                <div style={{ borderTop: `1px solid ${colors.borderSubtle}`, marginTop: 4, paddingTop: 4 }}>
+                  <TooltipRow label={t('col.net')} value={formatCurrency(d.net)} color={METRIC_COLORS.netProfit} />
+                  <TooltipRow label={t('chart.lolCount')} value={String(d.loadCount)} color={METRIC_COLORS.loads} />
+                </div>
+              </>
+            );
+          })()}
+        </ChartTooltip>
       </div>
-    </div>
+    </ChartCard>
   );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CHART 2 — Load Volume (compact)
+   ═══════════════════════════════════════════════════════════════ */
+
+export function LoadVolumeChart({ weeks }: { weeks: WeeklyAggregation[] }) {
+  const { t } = useI18n();
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  if (weeks.length === 0) return null;
+
+  const data = weeks.map((w) => ({
+    label: w.weekLabel,
+    startDate: w.startDate,
+    endDate: w.endDate,
+    count: w.loadCount,
+    gross: w.grossAmount,
+    net: w.netProfitAmount,
+    avgGross: w.loadCount > 0 ? Math.round(w.grossAmount / w.loadCount) : 0,
+  }));
+  const maxCount = Math.max(...data.map((d) => d.count), 1);
+  const totalLoads = data.reduce((s, d) => s + d.count, 0);
+  const rotate = shouldRotateLabels(weeks.length);
+
+  const chartH = 180;
+  const barW = Math.max(12, Math.min(28, 300 / weeks.length));
+  const groupPad = Math.max(4, Math.min(20, 500 / weeks.length));
+  const groupW = barW + groupPad;
+  const padL = 40;
+  const padR = 12;
+  const padBottom = rotate ? 52 : 36;
+  const svgW = Math.max(300, weeks.length * groupW + padL + padR);
+
+  return (
+    <ChartCard>
+      <ChartHeader title={t('chart.loadVolume')} subtitle={t('chart.totalLoadsDispatched', { count: totalLoads })} />
+
+      <div style={{ overflowX: 'auto', position: 'relative' }}>
+        <svg width={svgW} height={chartH + padBottom} viewBox={`0 0 ${svgW} ${chartH + padBottom}`}
+          style={{ fontFamily, display: 'block' }} onMouseLeave={() => setHoverIdx(null)}>
+          {[0, 0.5, 1].map((frac) => {
+            const y = chartH - frac * chartH;
+            return (
+              <g key={frac}>
+                <line x1={padL} y1={y} x2={svgW - padR} y2={y}
+                  stroke={frac === 0 ? colors.border : '#eef2f6'} strokeWidth={1}
+                  strokeDasharray={frac > 0 ? '4,3' : 'none'} />
+                <text x={padL - 6} y={y + 3} textAnchor="end" fontSize={10}
+                  fill={colors.textMuted} fontFamily={fontFamily}>
+                  {Math.round(maxCount * frac)}
+                </text>
+              </g>
+            );
+          })}
+
+          {data.map((d, i) => {
+            const bx = padL + groupPad / 2 + i * groupW;
+            const h = Math.max(0, (d.count / maxCount) * chartH);
+            const hovered = hoverIdx === i;
+            return (
+              <g key={d.label} style={{ cursor: 'pointer' }} onMouseEnter={() => setHoverIdx(i)}>
+                <rect x={bx - 4} y={0} width={barW + 8} height={chartH}
+                  fill={hovered ? 'rgba(15,23,42,0.03)' : 'transparent'} rx={4} />
+                <rect x={bx} y={chartH - h} width={barW} height={h} fill={METRIC_COLORS.loads} rx={4}
+                  opacity={hovered ? 1 : 0.7} />
+                {hovered && (
+                  <text x={bx + barW / 2} y={chartH - h - 6} textAnchor="middle" fontSize={11}
+                    fontWeight={700} fill={METRIC_COLORS.loads} fontFamily={fontFamily}>
+                    {d.count}
+                  </text>
+                )}
+                <text x={bx + barW / 2} y={chartH + (rotate ? 10 : 14)}
+                  textAnchor={rotate ? 'end' : 'middle'} fontSize={rotate ? 9 : 10}
+                  fill={hovered ? colors.text : colors.textMuted} fontWeight={hovered ? 600 : 400}
+                  fontFamily={fontFamily}
+                  transform={rotate ? `rotate(-45, ${bx + barW / 2}, ${chartH + 10})` : undefined}>
+                  {rotate ? shortWeekLabel(d.label) : d.label}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+
+        <ChartTooltip visible={hoverIdx !== null}
+          left={padL + groupPad / 2 + (hoverIdx ?? 0) * groupW + barW / 2} top={8}>
+          {hoverIdx !== null && data[hoverIdx] && (() => {
+            const d = data[hoverIdx];
+            const pctOfTotal = totalLoads > 0 ? ((d.count / totalLoads) * 100).toFixed(1) : '0';
+            return (
+              <>
+                <div style={{ fontWeight: 600, fontSize: 12, color: colors.text, marginBottom: 2 }}>{d.label}</div>
+                <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 6, paddingBottom: 4,
+                  borderBottom: `1px solid ${colors.borderSubtle}` }}>
+                  {formatDateRange(d.startDate, d.endDate)}
+                </div>
+                <TooltipRow label={t('chart.loads')} value={`${d.count} (${pctOfTotal}%)`} color={METRIC_COLORS.loads} />
+                <TooltipRow label={t('col.gross')} value={formatCurrency(d.gross)} color={METRIC_COLORS.gross} />
+                <TooltipRow label={t('col.net')} value={formatCurrency(d.net)} color={METRIC_COLORS.netProfit} />
+                <TooltipRow label={t('chart.avgGrossLoad')} value={formatCurrency(d.avgGross)} color={colors.textSecondary} />
+              </>
+            );
+          })()}
+        </ChartTooltip>
+      </div>
+    </ChartCard>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LEGACY EXPORTS (backward compatibility)
+   ═══════════════════════════════════════════════════════════════ */
+
+export function SpecialProfitStatsChart({ weeks }: { weeks: WeeklyAggregation[] }) {
+  return <RevenueCostChart weeks={weeks} />;
+}
+export function ProfitStatsChart({ weeks }: { weeks: WeeklyAggregation[] }) {
+  return <RevenueCostChart weeks={weeks} />;
 }
 
 /* ──────────────── Top corridors table ────────────────────────── */
 
 export function TopCorridorsCard({ corridors }: { corridors: TopCorridor[] }) {
+  const { t } = useI18n();
   if (corridors.length === 0) return null;
 
   const cellStyle: React.CSSProperties = {
-    padding: '10px 12px',
-    borderBottom: `1px solid ${colors.borderSubtle}`,
-    fontSize: fontSizes.sm,
-    color: colors.text,
+    padding: '10px 12px', borderBottom: `1px solid ${colors.borderSubtle}`,
+    fontSize: fontSizes.sm, color: colors.text,
   };
   const headerCellStyle: React.CSSProperties = {
-    ...cellStyle,
-    fontWeight: 600,
-    fontSize: fontSizes.xs,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-    borderBottom: `1px solid ${colors.border}`,
+    ...cellStyle, fontWeight: 600, fontSize: fontSizes.xs, color: colors.textMuted,
+    textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: `1px solid ${colors.border}`,
   };
+  const numCellStyle: React.CSSProperties = { ...cellStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
 
   return (
     <div style={{ ...cardStyle, minWidth: 300 }}>
       <h3 style={{ margin: `0 0 ${spacing.lg}`, fontSize: fontSizes.lg, fontWeight: 600, color: colors.text }}>
-        Top Corridors
+        {t('chart.topCorridors')}
       </h3>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={headerCellStyle}>Route</th>
-            <th style={{ ...headerCellStyle, textAlign: 'right' }}>Loads</th>
-            <th style={{ ...headerCellStyle, textAlign: 'right' }}>Gross</th>
-            <th style={{ ...headerCellStyle, textAlign: 'right' }}>Profit</th>
-          </tr>
-        </thead>
-        <tbody>
-          {corridors.map((c, i) => (
-            <tr key={i} style={{ background: i % 2 === 1 ? colors.bgMuted : 'transparent' }}>
-              <td style={cellStyle}>
-                <span style={{ fontWeight: 500 }}>{c.fromState}</span>
-                <span style={{ color: colors.textMuted, margin: '0 4px' }}>&rarr;</span>
-                <span style={{ fontWeight: 500 }}>{c.toState}</span>
-              </td>
-              <td style={{ ...cellStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{c.loadCount}</td>
-              <td style={{ ...cellStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(c.grossAmount)}</td>
-              <td style={{
-                ...cellStyle,
-                textAlign: 'right',
-                fontVariantNumeric: 'tabular-nums',
-                color: c.profitAmount >= 0 ? colors.success : colors.danger,
-                fontWeight: 500,
-              }}>{formatCurrency(c.profitAmount)}</td>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 520 }}>
+          <thead>
+            <tr>
+              <th style={headerCellStyle}>{t('corridors.route')}</th>
+              <th style={{ ...headerCellStyle, textAlign: 'right' }}>{t('corridors.loads')}</th>
+              <th style={{ ...headerCellStyle, textAlign: 'right' }}>{t('corridors.gross')}</th>
+              <th style={{ ...headerCellStyle, textAlign: 'right' }}>{t('corridors.driver')}</th>
+              <th style={{ ...headerCellStyle, textAlign: 'right' }}>{t('corridors.profit')}</th>
+              <th style={{ ...headerCellStyle, textAlign: 'right' }}>{t('corridors.otr')}</th>
+              <th style={{ ...headerCellStyle, textAlign: 'right' }}>{t('corridors.netProfit')}</th>
+              <th style={{ ...headerCellStyle, textAlign: 'right' }}>{t('corridors.margin')}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {corridors.map((c, i) => {
+              const margin = c.grossAmount > 0 ? (c.profitAmount / c.grossAmount) * 100 : 0;
+              return (
+                <tr key={i} style={{ background: i % 2 === 1 ? colors.bgMuted : 'transparent' }}>
+                  <td style={cellStyle}>
+                    <span style={{ fontWeight: 500 }}>{c.fromState}</span>
+                    <span style={{ color: colors.textMuted, margin: '0 4px' }}>&rarr;</span>
+                    <span style={{ fontWeight: 500 }}>{c.toState}</span>
+                  </td>
+                  <td style={numCellStyle}>{c.loadCount}</td>
+                  <td style={numCellStyle}>{formatCurrency(c.grossAmount)}</td>
+                  <td style={numCellStyle}>{formatCurrency(c.driverCostAmount)}</td>
+                  <td style={{ ...numCellStyle, color: c.profitAmount >= 0 ? colors.success : colors.danger, fontWeight: 500 }}>
+                    {formatCurrency(c.profitAmount)}
+                  </td>
+                  <td style={numCellStyle}>{formatCurrency(c.otrAmount)}</td>
+                  <td style={{ ...numCellStyle, color: c.netProfitAmount >= 0 ? colors.success : colors.danger, fontWeight: 500 }}>
+                    {formatCurrency(c.netProfitAmount)}
+                  </td>
+                  <td style={{ ...numCellStyle, color: margin >= 0 ? colors.success : colors.danger }}>
+                    {margin.toFixed(1)}%
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -407,24 +511,31 @@ export function TopCorridorsCard({ corridors }: { corridors: TopCorridor[] }) {
 /* ──────────────── Flag summary progress bars ────────────────── */
 
 export function FlagSummaryCard({
-  flags,
-  totalLoads,
+  flags, totalLoads,
 }: {
   flags: { quickPay: number; directPayment: number; factoring: number; driverPaid: number };
   totalLoads: number;
 }) {
+  const { t } = useI18n();
   const items = [
-    { label: 'Quick Pay', count: flags.quickPay, color: '#f59e0b' },
-    { label: 'Direct Payment', count: flags.directPayment, color: '#3b82f6' },
-    { label: 'Factoring', count: flags.factoring, color: '#8b5cf6' },
-    { label: 'Driver Paid', count: flags.driverPaid, color: '#16a34a' },
+    { label: t('flag.quickPay'), count: flags.quickPay, color: '#f59e0b' },
+    { label: t('flag.directPayment'), count: flags.directPayment, color: '#3b82f6' },
+    { label: t('flag.factoring'), count: flags.factoring, color: '#8b5cf6' },
+    { label: t('flag.driverPaid'), count: flags.driverPaid, color: '#16a34a' },
   ];
+  const allZero = items.every((item) => item.count === 0);
 
   return (
     <div style={{ ...cardStyle, minWidth: 260 }}>
       <h3 style={{ margin: `0 0 ${spacing.lg}`, fontSize: fontSizes.lg, fontWeight: 600, color: colors.text }}>
-        Payment Flags
+        {t('chart.paymentFlags')}
       </h3>
+      {allZero && (
+        <div style={{ fontSize: fontSizes.sm, color: colors.textMuted, marginBottom: 12, padding: '8px 12px',
+          background: colors.bgMuted, borderRadius: radii.md, border: `1px solid ${colors.borderSubtle}` }}>
+          {t('chart.noFlagsSet')}
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {items.map((item) => {
           const pct = totalLoads > 0 ? (item.count / totalLoads) * 100 : 0;
@@ -447,42 +558,25 @@ export function FlagSummaryCard({
   );
 }
 
-/* ──────────────── Sparkline (mini line) ──────────────────────── */
+/* ──────────────── Sparkline ──────────────────────────────────── */
 
 export function Sparkline({
-  data,
-  color = colors.primary,
-  width = 80,
-  height = 28,
-}: {
-  data: number[];
-  color?: string;
-  width?: number;
-  height?: number;
-}) {
+  data, color = colors.primary, width = 80, height = 28,
+}: { data: number[]; color?: string; width?: number; height?: number }) {
   if (data.length < 2) return null;
-
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
   const pad = 2;
-
   const points = data.map((v, i) => {
     const x = pad + (i / (data.length - 1)) * (width - 2 * pad);
     const y = height - pad - ((v - min) / range) * (height - 2 * pad);
     return `${x},${y}`;
   });
-
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: 'block' }}>
-      <polyline
-        points={points.join(' ')}
-        fill="none"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <polyline points={points.join(' ')} fill="none" stroke={color} strokeWidth={1.5}
+        strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
